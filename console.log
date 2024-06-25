@@ -77,3 +77,46 @@ INFO:     192.168.128.146:50336 - "GET / HTTP/1.1" 200 OK
 INFO:     192.168.128.146:50340 - "GET / HTTP/1.1" 200 OK
 INFO:     192.168.128.146:50349 - "GET / HTTP/1.1" 200 OK
 INFO:     192.168.128.146:50350 - "GET / HTTP/1.1" 200 OK
+ERROR:asyncio:Task exception was never retrieved
+future: <Task finished name='Task-3' coro=<periodic_resource_update() done, defined at C:\Users\issei\Music\api-1\beta.py:927> exception=SSLError(MaxRetryError("HTTPSConnectionPool(host='api-ap3.pusher.com', port=443): Max retries exceeded with url: /apps/1820345/events?auth_key=4cbc3c15bfd521142b7a&auth_signature=f2418e5600e0d1b133e4435132d8ba2ac812449522400d9fdaa4bd6433116d16&auth_timestamp=1719218742&auth_version=1.0&body_md5=b3d2448894d4fd35b22981326844910c (Caused by SSLError(SSLEOFError(8, 'EOF occurred in violation of protocol (_ssl.c:2406)')))"))>
+urllib3.exceptions.SSLError: EOF occurred in violation of protocol (_ssl.c:2406)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "c:\Users\issei\Music\api-1\.venv\Lib\site-packages\requests\adapters.py", line 667, in send
+    resp = conn.urlopen(
+           ^^^^^^^^^^^^^
+  File "c:\Users\issei\Music\api-1\.venv\Lib\site-packages\urllib3\connectionpool.py", line 847, in urlopen
+    retries = retries.increment(
+              ^^^^^^^^^^^^^^^^^^
+  File "c:\Users\issei\Music\api-1\.venv\Lib\site-packages\urllib3\util\retry.py", line 515, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.MaxRetryError: HTTPSConnectionPool(host='api-ap3.pusher.com', port=443): Max retries exceeded with url: /apps/1820345/events?auth_key=4cbc3c15bfd521142b7a&auth_signature=f2418e5600e0d1b133e4435132d8ba2ac812449522400d9fdaa4bd6433116d16&auth_timestamp=1719218742&auth_version=1.0&body_md5=b3d2448894d4fd35b22981326844910c (Caused by SSLError(SSLEOFError(8, 'EOF occurred in violation of protocol (_ssl.c:2406)')))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\issei\Music\api-1\beta.py", line 930, in periodic_resource_update
+    await admin_status_server()
+  File "C:\Users\issei\Music\api-1\beta.py", line 917, in admin_status_server
+    pusher_client.trigger("private-my-channel", "server_status", {"data": status})
+  File "c:\Users\issei\Music\api-1\.venv\Lib\site-packages\pusher\pusher.py", line 149, in trigger
+    return self._pusher_client.trigger(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\issei\Music\api-1\.venv\Lib\site-packages\pusher\http.py", line 31, in __call__
+    return self.client.http.send_request(self.make_request(*args, **kwargs))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\issei\Music\api-1\.venv\Lib\site-packages\pusher\requests.py", line 38, in send_request
+    resp = self.session.request(
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\issei\Music\api-1\.venv\Lib\site-packages\requests\sessions.py", line 589, in request
+    resp = self.send(prep, **send_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\issei\Music\api-1\.venv\Lib\site-packages\requests\sessions.py", line 703, in send
+    r = adapter.send(request, **kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\issei\Music\api-1\.venv\Lib\site-packages\requests\adapters.py", line 698, in send
+    raise SSLError(e, request=request)
+requests.exceptions.SSLError: HTTPSConnectionPool(host='api-ap3.pusher.com', port=443): Max retries exceeded with url: /apps/1820345/events?auth_key=4cbc3c15bfd521142b7a&auth_signature=f2418e5600e0d1b133e4435132d8ba2ac812449522400d9fdaa4bd6433116d16&auth_timestamp=1719218742&auth_version=1.0&body_md5=b3d2448894d4fd35b22981326844910c (Caused by SSLError(SSLEOFError(8, 'EOF occurred in violation of protocol (_ssl.c:2406)')))
