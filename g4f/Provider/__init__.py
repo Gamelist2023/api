@@ -50,6 +50,7 @@ from .Vercel           import Vercel
 from .WhiteRabbitNeo   import WhiteRabbitNeo
 from .You              import You
 from .Reka             import Reka
+from .Pizzagpt import Pizzagpt
 
 import sys
 

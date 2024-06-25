@@ -289,46 +289,16 @@ async def delete_conversation_history():
         await asyncio.sleep(60)  # 1分ごとにチェック
 
 
-async def chat_with_OpenAI_stream(user_id: str, prompt: str,system: str):
-    # ユーザー識別子がなければUUIDで新たに作成
-    if not user_id:
-        user_id = str(uuid.uuid4())
-
-    # ユーザー識別子に対応する会話履歴を取得、なければ新たに作成
-    systemmessage = f"System:{system},この内容に従って出力"
-
-
-
-    try:
-        client = AsyncClient(
-            provider=g4f.Provider.OpenaiChat,
-            api_key=read_cookie_files(cookies_dir),  # 正しい関数名に修正
-        )
-        buffer = ""
-        async for chunk in client.chat.completions.create(
-            model="auto",
-            messages=[{"role": "user", "content":systemmessage +prompt}],
-            stream=True,
-        ):
-            if chunk.choices[0].delta.content:
-                buffer += chunk.choices[0].delta.content
-                for char in buffer:  # 一文字ずつ処理
-                    yield f"data: {char}\n\n"
-                    await asyncio.sleep(0.02)  # 0.02秒待機 (調整可能)
-                buffer = ""  # バッファをクリア
-        if buffer:
-            yield f"data: {buffer}\n\n"
-    except Exception as e:
-        logging.error(f"Error occurred: {str(e)}")
-        yield f"data: OpenAIのプロバイダーでエラーが発生しました。何度も起きる場合は他のプロバイダーを使用してください\n\n"  # エラーメッセージをyieldします
 
 chatlist = {}  # 全ユーザーの会話履歴を保存する辞書
 
 
-async def g4f_gemini(user_id: str, prompt: str):
+async def g4f_gemini(user_id: str, prompt: str,system: str):
     # ユーザー識別子がなければUUIDで新たに作成
     if not user_id:
         user_id = str(uuid.uuid4())
+
+    systemmessage = f"System:{system},この内容に従って出力"
     try:
         client = AsyncClient(
             provider=Gemini,
@@ -336,7 +306,7 @@ async def g4f_gemini(user_id: str, prompt: str):
         )
         response = await client.chat.completions.create(
             model="gemini",
-            messages=[{"role": "user", "content": prompt}],
+            messages=[{"role": "user", "content": systemmessage+prompt}],
         )
         return response.choices[0].message.content  # 正常な応答を返す
     except Exception as e:
@@ -407,6 +377,23 @@ async def gpt_4o(user_id: str, prompt: str, system: str):
         logging.error(f"Error occurred: {str(e)}")
         return f"Liaobotsプロバイダーmodel,gpt-4oでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください"  # エラーメッセージを返す
 
+async def pizzagpt(user_id: str, prompt: str,):
+    if not user_id:
+        user_id = str(uuid.uuid4())
+        
+    try:
+        client = AsyncClient(
+            provider=g4f.Provider.Pizzagpt,
+        )
+        response = await client.chat.completions.create(
+                model="pizzagpt",
+                messages=[{"role": "user", "content": prompt}],
+            )
+        return response.choices[0].message.content
+    except Exception as e:
+        logging.error(f"Error occurred: {str(e)}")
+        return f"pizzagptプロバイダーでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください"  # エラーメッセージを返す
+
 
 AI_prompt = "あなたは優秀なAIですまたユーザーの言語で回答します"
 
@@ -418,7 +405,7 @@ async def process_chat(provider: str, user_id: str, prompt: str, system: str = A
     if provider == 'OpenAI':
         response = await chat_with_OpenAI(user_id, prompt,system)
     elif provider == 'Gemini':
-        response = await g4f_gemini(user_id, prompt)
+        response = await g4f_gemini(user_id, prompt,system)
     elif provider == 'GeminiPro':
         response = await geminipro(user_id, prompt)
     elif provider == 'Reka':
@@ -431,6 +418,8 @@ async def process_chat(provider: str, user_id: str, prompt: str, system: str = A
         response = await ask(user_id, prompt,system)
     elif provider == "zundamon":
         response = await zundamon(user_id, prompt)
+    elif provider == "Pizzagpt":
+        response = await pizzagpt(user_id, prompt)
     else:
         return JSONResponse(content={"error": "Invalid provider specified"}, status_code=400)
 
@@ -469,6 +458,74 @@ async def chat(request: Request, provider: str, prompt: str, system: str = AI_pr
     return await process_chat(provider, user_id, prompt, system)
 
 
+
+## Stream Provider 
+async def g4f_gemini_stream(user_id: str, prompt: str,system: str):
+    # ユーザー識別子がなければUUIDで新たに作成
+    if not user_id:
+        user_id = str(uuid.uuid4())
+    systemmessage = f"System:{system},この内容に従って出力"
+    try:
+        client = AsyncClient(
+            provider=Gemini,
+            api_key=read_cookie_files(cookies_dir),
+        )
+        buffer = ""
+        async for chunk in client.chat.completions.create(
+            model="auto",
+            messages=[{"role": "user", "content":systemmessage +prompt}],
+            stream=True,
+        ):
+            if chunk.choices[0].delta.content:
+                buffer += chunk.choices[0].delta.content
+                for char in buffer: 
+                    yield f"data: {char}\n\n"
+                    await asyncio.sleep(0.02) 
+                buffer = "" 
+        if buffer:
+            yield f"data: {buffer}\n\n"
+    except Exception as e:
+        logging.error(f"Error occurred: {str(e)}")
+        yield f"data: GeminiStreamプロバイダーでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください"  # エラーメッセージを返す
+    
+
+async def chat_with_OpenAI_stream(user_id: str, prompt: str,system: str):
+    # ユーザー識別子がなければUUIDで新たに作成
+    if not user_id:
+        user_id = str(uuid.uuid4())
+
+    # ユーザー識別子に対応する会話履歴を取得、なければ新たに作成
+    systemmessage = f"System:{system},この内容に従って出力"
+
+
+    try:
+        client = AsyncClient(
+            provider=g4f.Provider.OpenaiChat,
+            api_key=read_cookie_files(cookies_dir),  # 正しい関数名に修正
+        )
+        buffer = ""
+        async for chunk in client.chat.completions.create(
+            model="auto",
+            messages=[{"role": "user", "content":systemmessage +prompt}],
+            stream=True,
+        ):
+            if chunk.choices[0].delta.content:
+                buffer += chunk.choices[0].delta.content
+                for char in buffer:  # 一文字ずつ処理
+                    yield f"data: {char}\n\n"
+                    await asyncio.sleep(0.02)  # 0.02秒待機 (調整可能)
+                buffer = ""  # バッファをクリア
+        if buffer:
+            yield f"data: {buffer}\n\n"
+    except Exception as e:
+        logging.error(f"Error occurred: {str(e)}")
+        yield f"data: OpenAIStreamプロバイダーでエラーが発生しました。何度も起きる場合は他のプロバイダーを使用してください\n\n"  # エラーメッセージをyieldします
+
+
+
+
+
+
 @app.post("/stream")
 async def stream(request: Request):
     data = await request.json()
@@ -500,6 +557,8 @@ async def stream(request: Request):
 
     if provider == 'OpenAI':
         return StreamingResponse(chat_with_OpenAI_stream(user_id, prompt, system),media_type="text/event-stream")  # media_type を設定
+    elif provider == 'Gemini':
+        return StreamingResponse(g4f_gemini_stream(user_id, prompt,system),media_type="text/event-stream")
     else:
         return JSONResponse(iter(["data:Invalid provider specified"]),media_type="text/event-stream")
 
