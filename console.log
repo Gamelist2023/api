@@ -1,12 +1,54 @@
 INFO:     Will watch for changes in these directories: ['C:\\Users\\issei\\Music\\api-1']
 INFO:     Uvicorn running on http://0.0.0.0:5000 (Press CTRL+C to quit)
-INFO:     Started reloader process [30672] using WatchFiles
-INFO:     Started server process [32104]
+INFO:     Started reloader process [14004] using WatchFiles
+INFO:     Started server process [24228]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 None
-INFO:     192.168.128.167:2032 - "GET / HTTP/1.1" 200 OK
-INFO:     192.168.128.167:2056 - "POST /stream HTTP/1.1" 200 OK
+INFO:     192.168.128.146:50166 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.128.146:50165 - "GET /home/css/icon.png HTTP/1.1" 200 OK
+INFO:     192.168.128.146:50169 - "GET /apple-touch-icon.png HTTP/1.1" 404 Not Found
+INFO:     192.168.128.146:50171 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     192.168.128.146:50170 - "GET /apple-touch-icon-precomposed.png HTTP/1.1" 404 Not Found
+INFO:     192.168.128.146:50169 - "GET /home/css/icon.png HTTP/1.1" 200 OK
+INFO:     192.168.128.146:50170 - "GET /home/css/icon.png HTTP/1.1" 200 OK
+INFO:     192.168.128.146:50171 - "GET /home/css/icon.png HTTP/1.1" 200 OK
+INFO:     192.168.128.146:50172 - "GET /home/css/icon.png HTTP/1.1" 200 OK
+INFO:     192.168.128.146:50173 - "GET /home/css/resized_image_iPhone12Pro.png HTTP/1.1" 200 OK
+INFO:     192.168.128.146:50174 - "GET /home/css/resized_image_iPhone12Pro.png HTTP/1.1" 200 OK
+INFO:     192.168.128.146:50177 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.128.146:50180 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.128.146:50183 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.128.146:50189 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.128.146:50189 - "GET /home/css/resized_image_iPhone12.png HTTP/1.1" 404 Not Found
+INFO:     192.168.128.146:50189 - "GET /home/css/resized_image_iPhone12.png HTTP/1.1" 404 Not Found
+INFO:     192.168.128.146:50190 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.128.146:50191 - "GET /home/css/resized_image_iPhone12.png HTTP/1.1" 404 Not Found
+INFO:     192.168.128.146:50209 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.128.146:50209 - "GET /home/css/resized_image_iPhone12.png HTTP/1.1" 404 Not Found
+INFO:     192.168.128.146:50216 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.128.146:50216 - "GET /home/css/resized_image_iPhone12Pro.png HTTP/1.1" 200 OK
+INFO:     192.168.128.146:50217 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.128.146:50224 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.128.146:50223 - "GET /home/css/resized_image_iPhone13.png HTTP/1.1" 404 Not Found
+INFO:     192.168.128.146:50241 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.128.146:50240 - "GET /home/css/resized_image_iPhone12Pro.png HTTP/1.1" 200 OK
+INFO:     192.168.128.146:50244 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.128.146:50247 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.128.146:50279 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.128.193:47442 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.128.193:47442 - "GET /home/css/icon.png HTTP/1.1" 200 OK
+INFO:     192.168.128.193:47442 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.128.193:47443 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.128.193:47443 - "GET /home/css/resized_image_iPhone12Pro.png HTTP/1.1" 200 OK
+INFO:     192.168.128.146:50285 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.128.193:47889 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.128.193:47889 - "GET /home/css/resized_image_iPhone12Pro.png HTTP/1.1" 304 Not Modified
+INFO:     192.168.128.193:47890 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.128.193:47896 - "GET /chat?provider=ask&prompt=&system= HTTP/1.1" 200 OK
+INFO:     192.168.128.193:47922 - "GET /chat?provider=ask&prompt=&system= HTTP/1.1" 200 OK
+INFO:     192.168.128.193:47926 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.128.193:47927 - "POST /stream HTTP/1.1" 200 OK
 Read .har file: C:\Users\issei\Music\api-1\har\chatgpt.com.har
 Read .har file: C:\Users\issei\Music\api-1\har\gemini.google.com.har
 Cookies added: 18 from .google.com
@@ -27,25 +69,11 @@ Cookies added: 2 from .huggingface.co
 Cookies added: 2 from huggingface.co
 Using OpenaiChat provider and auto model
 Arkose: False Proofofwork: gAAAAABWzI1M...
-INFO:     192.168.128.167:2114 - "POST /stream HTTP/1.1" 200 OK
-Read .har file: C:\Users\issei\Music\api-1\har\chatgpt.com.har
-Read .har file: C:\Users\issei\Music\api-1\har\gemini.google.com.har
-Cookies added: 18 from .google.com
-Read .har file: C:\Users\issei\Music\api-1\har\huggingface.co.har
-Cookies added: 3 from huggingface.co
-Read .har file: C:\Users\issei\Music\api-1\har\www.bing.com.har
-Cookies added: 28 from .bing.com
-Read cookie file: C:\Users\issei\Music\api-1\har\gemini.json
-Cookies added: 2 from .gemini.google.com
-Cookies added: 18 from .google.com
-Read cookie file: C:\Users\issei\Music\api-1\har\modes.json
-Cookies added: 2 from .huggingface.co
-Cookies added: 2 from huggingface.co
-Read cookie file: C:\Users\issei\Music\api-1\har\rika.json
-Cookies added: 1 from chat.reka.ai
-Read cookie file: C:\Users\issei\Music\api-1\har\youProvider.json
-Cookies added: 2 from .huggingface.co
-Cookies added: 2 from huggingface.co
-Using OpenaiChat provider and auto model
-Arkose: False Proofofwork: gAAAAABWzI1M...
-INFO:     192.168.128.167:2149 - "POST /stream HTTP/1.1" 200 OK
+INFO:     192.168.128.193:47927 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.128.146:50330 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.128.146:50333 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.128.146:50332 - "GET /home/css/resized_image_iPhone12Pro.png HTTP/1.1" 304 Not Modified
+INFO:     192.168.128.146:50336 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.128.146:50340 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.128.146:50349 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.128.146:50350 - "GET / HTTP/1.1" 200 OK

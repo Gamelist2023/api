@@ -12,11 +12,8 @@ def resize_image(input_image_path, output_image_path, size):
     resized_image.save(output_image_path)
 
 # iPhone 12 Pro Maxの解像度に合わせて画像をリサイズ
-resize_image('home\css\AIchat.png', 'resized_image_iPhone11ProMax.png', (414, 896))
-resize_image('home\css\AIchat.png', 'resized_image_iPhone11.png', (414, 896))
-resize_image('home\css\AIchat.png', 'resized_image_iPhone8plus.png', (414, 736))
-resize_image('home\css\AIchat.png', 'resized_image_iPhone8.png', (375, 667))
-resize_image('home\css\AIchat.png', 'resized_image_iPhoneSEold.png', (320, 568))
+resize_image('home\css\AIchat.png', 'main_iPhone.png', (320, 460))
+
 
 
 

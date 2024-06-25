@@ -9,8 +9,12 @@
   <link rel="icon" id="appIcon" type="image/png" href="/home/css/icon.png">
   <link rel="icon" href="/home/css/icon.png"  />
   <link rel="apple-touch-icon" href="/home/css/icon.png">
+  <meta name="apple-touch-fullscreen" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="apple-touch-startup-image" href="/home/css/main_iPhone.png" />
+
     <link rel="apple-touch-startup-image" media="screen and (device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)" href="/home/css/resized_image_iPhone12ProMax.png">
-        
+  
         <link rel="apple-touch-startup-image" media="screen and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)" href="/home/css/resized_image_iPhone12Pro.png">
         
         <link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" href="/home/css/resized_image_iPhone12Min.png">
@@ -26,8 +30,6 @@
         <link rel="apple-touch-startup-image" media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)" href="/home/css/resized_image_iPhoneSEold.png">
     <meta name="apple-mobile-web-app-title" content="AI Chat">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-  <link rel="manifest" href="/manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&display=swap" rel="stylesheet">
@@ -87,6 +89,7 @@
       justify-content: space-between;
       align-items: center;
       padding: 20px;
+      padding-top: calc(20px + env(safe-area-inset-top));
     }
 
     .sidebar-header h1 {
@@ -208,7 +211,7 @@
       display: flex;
       align-items: center;
       flex-wrap: wrap;
-      padding-top: 60px;
+      padding-top: calc(60px + env(safe-area-inset-top)); 
     }
 
     .chat-title {
@@ -429,6 +432,7 @@
       left: 20px;
       z-index: 12; 
       cursor: pointer;
+      padding-top: env(safe-area-inset-top);
     }
 
     .hamburger-menu span {
@@ -479,9 +483,29 @@
 .sidebar-header-spacer {
   height: 35px; /* 三本線と文字の間に適切な間隔を設定 */
 }
+#splash-screen {
+  position: fixed; 
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9999; 
+  background-color: #fff; /* 必要であれば背景色を設定 */
+  display: flex;
+  justify-content: center;
+  align-items: center; 
+}
+
+#splash-screen img {
+  width: 100%; 
+  height: auto; 
+}
   </style>
 </head>
 <body>
+  <div id="splash-screen">
+    <img id="splash-image" alt="起動画像">
+  </div>
   <div id="settingsModal" class="modal">
     <div class="modal-content">
       <span class="close" onclick="saveSettings()">×</span> 
@@ -518,6 +542,10 @@
           <input type="checkbox" id="showSystemPrompt">
           <label for="showSystemPrompt">システムプロンプトを表示</label>
         </div>
+        <div class="setting-option">
+      <input type="checkbox" id="showSplashScreen" checked>
+      <label for="showSplashScreen">起動画像を表示</label>
+    </div>
         <button onclick="saveTextAsFile()">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
             <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
@@ -706,30 +734,33 @@ let autoSaveInterval;
     }
 
     function saveSettings() {
-      const settings = {
-        provider: document.getElementById('provider').value,
-        userName: document.getElementById('userName').value,
-        showSystemPrompt: document.getElementById('showSystemPrompt').checked
-      };
-      document.cookie = `settings=${encodeURIComponent(JSON.stringify(settings))}; path=/`;
-    }
+  const settings = {
+    provider: document.getElementById('provider').value,
+    userName: document.getElementById('userName').value,
+    showSystemPrompt: document.getElementById('showSystemPrompt').checked,
+    showSplashScreen: document.getElementById('showSplashScreen').checked 
+  };
+  document.cookie = `settings=${encodeURIComponent(JSON.stringify(settings))}; path=/`;
+}
 
     function loadSettings() {
-      const cookieValue = document.cookie.split('; ').find(row => row.startsWith('settings='))?.split('=')[1];
-      if (cookieValue) {
-        try {
-          const settings = JSON.parse(decodeURIComponent(cookieValue));
-          document.getElementById('provider').value = settings.provider;
-          document.getElementById('userName').value = settings.userName;
-          document.getElementById('showSystemPrompt').checked = settings.showSystemPrompt;
-          if (settings.showSystemPrompt) {
-            document.getElementById('system-prompt-input').style.display = 'block';
-          }
-        } catch (error) {
-          console.error('設定の読み込み中にエラーが発生しました。', error);
-        }
+  const cookieValue = document.cookie.split('; ').find(row => row.startsWith('settings='))?.split('=')[1];
+  if (cookieValue) {
+    try {
+      const settings = JSON.parse(decodeURIComponent(cookieValue));
+      document.getElementById('provider').value = settings.provider;
+      document.getElementById('userName').value = settings.userName;
+      document.getElementById('showSystemPrompt').checked = settings.showSystemPrompt;
+      // 起動画像表示設定
+      document.getElementById('showSplashScreen').checked = settings.showSplashScreen; 
+      if (settings.showSystemPrompt) {
+        document.getElementById('system-prompt-input').style.display = 'block';
       }
+    } catch (error) {
+      console.error('設定の読み込み中にエラーが発生しました。', error);
     }
+  }
+}
 
     function updateConversationList() {
       const conversationsList = document.querySelector('.conversations');
@@ -1445,6 +1476,7 @@ lines.forEach(line => {
       loadSettings();
       userName = cookieManager.get('userName') || 'ユーザー';
       document.getElementById('userName').value = userName;
+      
 
       autoSaveInterval = setInterval(saveCurrentConversation, 5 * 60 * 1000);
 
@@ -1498,6 +1530,45 @@ lines.forEach(line => {
 
       updateConversationList();
     });
+
+    window.addEventListener('load', function() {
+  const splashScreen = document.getElementById('splash-screen');
+  const splashImage = document.getElementById('splash-image');
+  const userAgent = navigator.userAgent;
+
+  // Cookieから設定値を読み込み
+  loadConversationsFromCookie();
+  loadSettings();
+  
+   
+
+  // 起動画像の表示設定を読み込み
+  const settings = cookieManager.get('settings');
+  const showSplashScreen = settings ? settings.showSplashScreen : true; // デフォルトはtrue
+
+  // 起動画像を表示する設定になっている場合のみ表示
+  if (showSplashScreen) {
+    // iPhone か Android かを判別
+    if (userAgent.match(/iPhone/i)) {
+      splashImage.src = '/home/css/resized_image_iPhone12Pro.png'; // iPhone用起動画像
+    } else if (userAgent.match(/Android/i)) {
+      splashImage.src = '/home/css/resized_image_iPhone12Pro.png'; // Android用起動画像
+    } else {
+      splashScreen.style.display = 'none'; // それ以外の場合は非表示
+      return; // 以降の処理をスキップ
+    }
+
+    // 起動画像を表示
+    splashScreen.style.display = 'flex';
+
+    // 一定時間後に非表示
+    setTimeout(function() {
+      splashScreen.style.display = 'none';
+    }, 2000); // 2秒後に非表示 (必要に応じて調整)
+  } else {
+    splashScreen.style.display = 'none'; // 非表示
+  }
+});
   </script>
 </body>
 </html>
