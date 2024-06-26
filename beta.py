@@ -490,6 +490,55 @@ async def chat(request: Request, provider: str, prompt: str, token: str, system:
 
 
 
+##Post Chat//
+@app.post("/chat")
+async def post_chat(request: Request):
+    data = await request.json()
+    provider = data.get('provider', "GeminiPro")  # デフォルトはOpenAI
+    prompt = data.get('prompt')
+    system = data.get('system', AI_prompt)
+    user_id = data.get('user_id') or request.client.host  # user_idをリクエストから取得
+    token = data.get('token')
+    if not user_id:
+        user_id = str(uuid.uuid4())
+
+    if not prompt:
+        return JSONResponse(content={"response": "No question asked"}, status_code=200)
+
+    # 文字数制限を設ける
+    if len(prompt) > 1000:
+        return JSONResponse(content={"response": "1000文字以内に収めてください"}, status_code=400)
+    
+
+    if not system:
+        system = AI_prompt
+
+    # 同じコメントが繰り返し使われていないかチェック
+    if user_id in last_comment and prompt == last_comment[user_id]:
+        return JSONResponse(content={"response": "同じコメントは連続して使用できません"}, status_code=400)
+
+    # 最後のコメントを更新
+    last_comment[user_id] = prompt
+
+    if check_provider(provider):
+        checkToken = check_token(token)
+        if checkToken == False:
+            return JSONResponse(content={"response": "このプロバイダーを使用するにはTokenが必要です(形式が間違っているか無効である可能性があります)"}, status_code=400)
+        
+
+    # アンチボットシステムでユーザーをチェック
+    is_banned, reason = check_and_ban(user_id, request)  # antibot.py の関数を呼び出す
+
+    if is_banned:
+        return JSONResponse(content={"response": reason}, status_code=400)
+         
+
+    
+
+    return await process_chat(provider, user_id, prompt, system)
+
+
+
 ## Stream Provider 
 async def g4f_gemini_stream(user_id: str, prompt: str,system: str):
     # ユーザー識別子がなければUUIDで新たに作成

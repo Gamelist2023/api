@@ -66,7 +66,7 @@ def check_and_ban(user_id: str, request, token: str = None):
     if token:
         max_requests_per_day = 1000  # トークンありの場合のリクエスト制限
     else:
-        max_requests_per_day = 2  # トークンなしの場合のリクエスト制限
+        max_requests_per_day = 100  # トークンなしの場合のリクエスト制限
 
 
     # 1日あたりのリクエスト数が最大値を超えた場合
