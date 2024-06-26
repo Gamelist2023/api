@@ -385,6 +385,12 @@
       border: 1px solid #ccc;
       border-radius: 5px;
     }
+    .setting-option input[type="password"] {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
 
     .setting-option input[type="checkbox"] {
       margin-right: 5px;
@@ -517,26 +523,20 @@
       <div class="setting-options">
         <div class="setting-option">
           <p>お知らせ</p>
-          <p>システムプロンプト対応☟</p>
-          <oi>
-            <li>claude-3-opus</li>
-            <li>gpt-4o</li>
-            <li>DeepinFra</li>
-            <li>ChatGPT(AIchat,試験的)</li>
-          </oi>
-          <p>6/24の更新によりBAN基準及び一日のリクエストを300に制限しました</p>
+          <p>6/24の更新によりBAN基準及び一日のリクエストを300に制限しましたトークン有りの場合は1000です</p>
           <label for="provider">AI Provider:</label>
           <select id="provider">
+            <optgroup label="通常(システムプロンプト非対応):">
+              <option value="Reka">Reka</option>
+              <option value="GeminiPro">geminiPro</option> 
+              <option value="Pizzagpt">Pizzagpt(NEW)</option>
+            </optgroup>
+            <optgroup label="以下トークンが必須です"></optgroup>
             <optgroup label="システムプロンプト対応:">
               <option value="Claude3">claude-3-opus</option>
               <option value="gpt-4o">gpt-4o</option>
               <option value="ask">DeepinFra</option>
               <option value="Gemini">Gemini</option>
-            </optgroup>
-            <optgroup label="通常:">
-              <option value="Reka">Reka</option>
-              <option value="GeminiPro">geminiPro</option> 
-              <option value="Pizzagpt">Pizzagpt(NEW)</option>
             </optgroup>
             <optgroup label="ストリーミング＆システムプロンプト対応:">
               <option value="!OpenAI">ChatGPT(Stream)</option>
@@ -553,12 +553,20 @@
           <input type="text" id="userName" placeholder="ユーザー名を入力">
         </div>
         <div class="setting-option">
+          <label for="token">API token:</label>
+          <input type="password" id="APItoken" placeholder="Tokenを入力してください">
+        </div>
+        <div class="setting-option">
           <input type="checkbox" id="showSystemPrompt">
           <label for="showSystemPrompt">システムプロンプトを表示</label>
         </div>
         <div class="setting-option">
       <input type="checkbox" id="showSplashScreen" checked>
       <label for="showSplashScreen">起動画像を表示</label>
+    </div>
+    <button id="generateTokenButton">Tokenを発行</button>
+      <div id="tokenResult" style="display:none;">
+      <span>API Token: </span><span id="generatedToken"></span> <button onclick="copyToken()">コピー</button>
     </div>
         <button onclick="saveTextAsFile()">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
@@ -751,6 +759,7 @@ let autoSaveInterval;
   const settings = {
     provider: document.getElementById('provider').value,
     userName: document.getElementById('userName').value,
+    token: document.getElementById('APItoken').value,
     showSystemPrompt: document.getElementById('showSystemPrompt').checked,
     showSplashScreen: document.getElementById('showSplashScreen').checked 
   };
@@ -764,6 +773,7 @@ let autoSaveInterval;
       const settings = JSON.parse(decodeURIComponent(cookieValue));
       document.getElementById('provider').value = settings.provider;
       document.getElementById('userName').value = settings.userName;
+      document.getElementById('APItoken').value = settings.token;
       document.getElementById('showSystemPrompt').checked = settings.showSystemPrompt;
       // 起動画像表示設定
       document.getElementById('showSplashScreen').checked = settings.showSplashScreen; 
@@ -1259,6 +1269,7 @@ const temporaryDiv = document.createElement('div');
       var text = document.getElementById('question').value;
       var provider = document.getElementById('provider').value;
       var systems = document.getElementById('system-prompt-input').value;
+      var token = document.getElementById('APItoken').value;
 
       document.getElementById('question').value = '';
       addMessageToChat(text, true);
@@ -1275,7 +1286,8 @@ const temporaryDiv = document.createElement('div');
       body: JSON.stringify({
         'prompt': text,
         'provider': provider,
-        'system': systems
+        'system': systems,
+        'token': token
       })
     })
     .then(response => {
@@ -1380,7 +1392,7 @@ lines.forEach(line => {
 
          } else {
         // それ以外の場合は通常のGETリクエストを使用
-        fetch(`/chat?provider=${provider}&prompt=${encodeURIComponent(text)}&system=${encodeURIComponent(systems)}`)
+        fetch(`/chat?provider=${provider}&prompt=${encodeURIComponent(text)}&system=${encodeURIComponent(systems)}&token=${encodeURIComponent(token)}`)
           .then(response => response.json())
           .then(data => {
             const decodedData = typeof data === 'object' && data.hasOwnProperty('response') ? unicodeToUtf8(data.response) : unicodeToUtf8(data);
@@ -1600,6 +1612,33 @@ lines.forEach(line => {
     splashScreen.style.display = 'none'; // 非表示
   }
 });
+document.getElementById('generateTokenButton').addEventListener('click', () => {
+    fetch('/create_token', { method: 'POST' })
+      .then(response => {
+        if (!response.ok) {
+          return response.text().then(text => { throw new Error(text) })
+        }
+        return response.json()
+      })
+      .then(data => {
+        document.getElementById('tokenResult').style.display = 'block';
+        document.getElementById('generatedToken').innerText = data.access_token;
+      })
+      .catch(error => {
+        document.getElementById('tokenResult').style.display = 'block';
+        document.getElementById('generatedToken').innerText = error.message;
+      });
+  });
+
+  function copyToken() {
+  const tokenElement = document.getElementById('generatedToken');
+  const range = document.createRange();
+  range.selectNode(tokenElement); 
+  window.getSelection().removeAllRanges(); 
+  window.getSelection().addRange(range); 
+  document.execCommand('copy');
+  alert('トークンをコピーしました');
+}
   </script>
 </body>
 </html>

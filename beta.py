@@ -48,6 +48,12 @@ server_status = {
     "running": True,
     "stop_message":"サーバーメンテナンス中です"
 }
+TOKEN_LIST_PATH = "token_list.json"
+try:
+    with open(TOKEN_LIST_PATH, "r") as f:
+        token_list = json.load(f)
+except FileNotFoundError:
+    token_list = {}
 
 # パスワードハッシュ化の設定
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -130,10 +136,12 @@ def home(request: Request):
 
 geminis = {}
 
-async def ask(user_id: str, prompt: str,system: str):
+async def ask(user_id: str, prompt: str,system: str,token: str):
     # ユーザー識別子がなければUUIDで新たに作成
     if not user_id:
         user_id = str(uuid.uuid4())
+
+
 
     # ユーザー識別子に対応する会話履歴を取得、なければ新たに作成
     conversation_history = conversation_histories.get(user_id, [])
@@ -145,6 +153,8 @@ async def ask(user_id: str, prompt: str,system: str):
     # 最新の5つのメッセージのみを保持
     conversation_history = conversation_history[-5:]
     conversation_histories[user_id] = conversation_history
+
+
 
     try:
         client = AsyncClient(
@@ -425,9 +435,19 @@ async def process_chat(provider: str, user_id: str, prompt: str, system: str = A
 
     return JSONResponse(content={"response": response})
 
+def check_provider(provider: str) -> bool:
+    """
+    指定されたプロバイダーがトークン認証を必要とするかどうかを判定する。
+    必要とする場合は True、必要としない場合は False を返す。
+    """
+    # トークン認証が不要なプロバイダーのリスト
+    no_auth_providers = ["Reka", "GeminiPro", "Pizzagpt"]  
+
+    return provider not in no_auth_providers
+
 
 @app.get("/chat")
-async def chat(request: Request, provider: str, prompt: str, system: str = AI_prompt):
+async def chat(request: Request, provider: str, prompt: str, token: str, system: str = AI_prompt):
     user_id = request.query_params.get('user_id') or request.client.host
     if not user_id:
         user_id = str(uuid.uuid4())
@@ -438,6 +458,7 @@ async def chat(request: Request, provider: str, prompt: str, system: str = AI_pr
     # 文字数制限を設ける
     if len(prompt) > 300:
         return JSONResponse(content={"response": "300文字以内に収めてください"}, status_code=400)
+    
 
     if not system:
         system = AI_prompt
@@ -449,11 +470,20 @@ async def chat(request: Request, provider: str, prompt: str, system: str = AI_pr
     # 最後のコメントを更新
     last_comment[user_id] = prompt
 
+    if check_provider(provider):
+        checkToken = check_token(token)
+        if checkToken == False:
+            return JSONResponse(content={"response": "このプロバイダーを使用するにはTokenが必要です(形式が間違っているか無効である可能性があります)"}, status_code=400)
+        
+
     # アンチボットシステムでユーザーをチェック
     is_banned, reason = check_and_ban(user_id, request)  # antibot.py の関数を呼び出す
 
     if is_banned:
-        return JSONResponse(content={"response": reason}, status_code=429)
+        return JSONResponse(content={"response": reason}, status_code=400)
+         
+
+    
 
     return await process_chat(provider, user_id, prompt, system)
 
@@ -533,6 +563,7 @@ async def stream(request: Request):
     prompt = data.get('prompt')
     system = data.get('system', AI_prompt)
     user_id = data.get('user_id') or request.client.host  # user_idをリクエストから取得
+    token = data.get('token')
 
     if not user_id:
         user_id = str(uuid.uuid4())
@@ -543,6 +574,12 @@ async def stream(request: Request):
     # 文字数制限を設ける
     if len(prompt) > 300:
         return StreamingResponse(iter(["data:300文字以内に収めてください"]),media_type="text/event-stream")
+    
+    if check_provider(provider):
+        checkToken = check_token(token)
+        if checkToken == False:
+            return StreamingResponse(content={"response": "このプロバイダーを使用するにはTokenが必要です(形式が間違っているか無効である可能性があります)"}, status_code=400)
+        
 
     if not system:
         system = AI_prompt
@@ -1135,3 +1172,55 @@ async def download_file(password: str, path: str):
     full_path = os.path.join(base_dir, path.lstrip('/'))
 
     return FileResponse(full_path)
+
+
+
+@app.post("/create_token")
+async def generate_token(request: Request):
+    """
+    ユーザーの IP アドレスまたはデバイス ID をもとにトークンを生成する
+    既にトークンが存在する場合は、既存のトークンを返す
+    """
+
+    global token_list  # グローバル変数 token_list を使用する
+
+    # ユーザーの IP アドレスを取得
+    client_ip = request.client.host
+
+    # IP アドレスが取得できない場合、エラーメッセージを返す
+    if not client_ip:
+        raise HTTPException(status_code=403, detail="お使いのデバイスでAPIキーが生成できませんでした")
+
+    # 新しいトークンを生成する
+    while True:
+        access_token = f"AI{str(uuid.uuid4())}"
+        # 生成したトークンが既に存在するかどうかを確認
+        if access_token not in token_list.values():  # トークン自体で重複チェック
+            break
+
+    # トークンリストを更新
+    token_list[client_ip] = access_token
+
+    # トークンリストを token_list.json ファイルに保存
+    with open(TOKEN_LIST_PATH, "w") as f:
+        json.dump(token_list, f, indent=4)
+
+    # 生成したトークンを返す
+    return JSONResponse({"access_token": access_token})
+
+
+def check_token(token: str):
+    """
+    受け取ったトークンが有効かどうかを確認する。
+    """
+
+    # グローバル変数 token_list を使用
+    global token_list
+
+    # トークンが存在するかどうかを確認する
+    for ip, stored_token in token_list.items():
+        if token == stored_token:
+            return True
+
+    # トークンが見つからない場合は False を返す
+    return False

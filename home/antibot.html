@@ -530,6 +530,27 @@
                 font-size: 24px;
             }
         }
+        @media (max-width: 768px) {
+    .window {
+         min-width: 20% !important; /* 画面幅の20%に設定 */ /* 画面幅の90%に設定 */
+        min-height: 20% !important; /* 画面高さの60%に設定 */
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%); /* 画面中央に配置 */
+    }
+
+    /* タスクバーの高さ調整 */
+    #taskbar {
+        height: 60px;
+    }
+
+    /* タスクバーのアイコンサイズ調整 */
+    #taskbar .icon {
+        width: 40px;
+        height: 40px;
+        font-size: 24px;
+    }
+}
     </style>
 </head>
 <body>
@@ -1034,10 +1055,20 @@
 
     // ウィンドウを開く関数
     function openWindow(windowId) {
-        const appWindow = document.getElementById(windowId); // アプリケーションウィンドウの要素
-        appWindow.style.display = 'block';
+    const appWindow = document.getElementById(windowId);
+    appWindow.style.display = 'block';
 
+    // モバイルの場合、ウィンドウのサイズと位置を再計算
+    if (window.innerWidth <= 768) {
+        const windowWidth = 0.2 * window.innerWidth; // 画面幅の20%
+        const windowHeight = 0.2 * window.innerHeight; // 画面高さの20%
+        appWindow.style.width = windowWidth + 'px';
+        appWindow.style.height = windowHeight + 'px';
+        appWindow.style.top = '50%';
+        appWindow.style.left = '50%';
+        appWindow.style.transform = 'translate(-50%, -50%)';
     }
+}
 
     // ウィンドウを閉じる関数
     function closeWindow(windowId) {
@@ -1522,23 +1553,27 @@
         document.getElementById('console-output').textContent = data.join(''); // data.join('') でリストを文字列に変換
     }
 
-    async function updateBanHistory() {
-        try {
-            const response = await fetch('/antibot/history');
-            const data = await response.json();
+   async function updateBanHistory() {
+  try {
+    const response = await fetch('/antibot/history');
+    const data = await response.json();
 
-            document.getElementById('banned-count').textContent = data.bannedCount;
-            const banHistoryTable = document.getElementById('ban-history').querySelector('tbody');
+    document.getElementById('banned-count').textContent = data.bannedCount;
+    const banHistoryTable = document.getElementById('ban-history').querySelector('tbody');
 
-            // 既存の行を削除
-            while (banHistoryTable.firstChild) {
-                banHistoryTable.removeChild(banHistoryTable.firstChild);
-            }
+    // 既存の行を削除
+    while (banHistoryTable.firstChild) {
+      banHistoryTable.removeChild(banHistoryTable.firstChild);
+    }
 
-            data.banHistory.forEach(ban => {
-                const row = banHistoryTable.insertRow();
-                row.insertCell().textContent = ban.user_id;
-                row.insertCell().textContent = ban.ban_time;
+    data.banHistory.forEach(ban => {
+      const row = banHistoryTable.insertRow();
+      row.insertCell().textContent = ban.user_id;
+      row.insertCell().textContent = ban.ban_time; // BAN時間を表示
+
+      // 残り時間表示用のセルを追加
+      const remainingTimeCell = row.insertCell();
+      remainingTimeCell.textContent = ban.remaining_time; 
 
                 const unbanButton = document.createElement('button');
                 unbanButton.textContent = '解除';
@@ -1555,25 +1590,25 @@
 
     // ユーザーのBAN解除
     async function unbanUser(userId) {
-        try {
-            const response = await fetch('/antibot/unban', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({user_id: userId}) // JSON データとして user_id を送信
-            });
+  try {
+    const response = await fetch('/antibot/unban', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ user_id: userId })
+    });
 
-            if (response.ok) {
-                // BAN解除後にBAN履歴を更新
-                updateBanHistory();
-            } else {
-                console.error('ユーザーのBAN解除に失敗しました。');
-            }
-        } catch (error) {
-            console.error(error);
-        }
+    if (response.ok) {
+      // BAN解除が成功したら、サーバーから最新のBAN情報を取得し直す
+      updateBanHistory(); // BAN履歴を更新
+    } else {
+      console.error('ユーザーのBAN解除に失敗しました。');
     }
+  } catch (error) {
+    console.error(error);
+  }
+}
 
 
     // ファイル/フォルダの名前変更
