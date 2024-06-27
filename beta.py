@@ -613,16 +613,17 @@ async def stream(request: Request):
         token = "NotToken"
 
     if not prompt:
-        return StreamingResponse(iter([f"data:  {json.dumps({'response': escape("質問を入力してください")})}\n\n"]),media_type="text/event-stream")
+        return StreamingResponse(iter([f"data:  {json.dumps({'response': escape('質問を入力してください')})}\n\n"]),media_type="text/event-stream")
+
 
     # 文字数制限を設ける
     if len(prompt) > 1000:
-        return StreamingResponse(iter([f"data:  {json.dumps({'response': escape("1000文字以内に収めてください")})}\n\n"]),media_type="text/event-stream")
+        return StreamingResponse(iter([f"data:  {json.dumps({'response': escape('1000文字以内に収めてください')})}\n\n"]),media_type="text/event-stream")
     
     if check_provider(provider):
         checkToken = check_token(token)
         if checkToken == False:
-            return StreamingResponse(iter([f"data: {json.dumps({'response': escape("このプロバイダーを使用するにはTokenが必要です(形式が間違っているか無効である可能性があります)")})}\n\n"]),media_type="text/event-stream")
+            return StreamingResponse(iter([f"data: {json.dumps({'response': escape('このプロバイダーを使用するにはTokenが必要です(形式が間違っているか無効である可能性があります)')})}\n\n"]),media_type="text/event-stream")
         
 
     if not system:
@@ -641,7 +642,7 @@ async def stream(request: Request):
     elif provider == 'Gemini':
         return StreamingResponse(g4f_gemini_stream(user_id, prompt,system),media_type="text/event-stream")
     else:
-        return StreamingResponse(iter([f"data: {json.dumps({'response': escape("Invalid provider specified")})}"]),media_type="text/event-stream")
+        return StreamingResponse(iter([f"data: {json.dumps({'response': escape('Invalid provider specified')})}"]),media_type="text/event-stream")
 
 
 
