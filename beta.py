@@ -1,5 +1,6 @@
 
 import asyncio
+from html import escape
 import subprocess
 from fastapi import BackgroundTasks, Body, FastAPI, File, Form, Request, HTTPException, Response, UploadFile, Header
 from fastapi.concurrency import run_in_threadpool
@@ -557,20 +558,16 @@ async def g4f_gemini_stream(user_id: str, prompt: str,system: str):
             stream=True,
         ):
             if chunk.choices[0].delta.content:
-                # バッファに文字を追加する際に改行コードを <br> に置換する
-                buffer += chunk.choices[0].delta.content.replace(' ', ' ')
-                for char in buffer: 
-                    yield f"data: {char}\n\n"
-                    await asyncio.sleep(0.02) 
-                buffer = "" 
-        if buffer:
-             yield f"data: {char}\n\n"
+                words = chunk.choices[0].delta.content.split(' ')
+                for word in words:  # 最後の単語も含めてすべての単語を送信
+                    yield f"data: {json.dumps({'response': escape(word)})}\n\n"
+                    await asyncio.sleep(0.02)  # 0.02秒待機 (調整可能)
     except Exception as e:
         logging.error(f"Error occurred: {str(e)}")
         yield f"data: GeminiStreamプロバイダーでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください"  # エラーメッセージを返す
     
 
-async def chat_with_OpenAI_stream(user_id: str, prompt: str,system: str):
+async def chat_with_OpenAI_stream(user_id: str, prompt: str, system: str):
     # ユーザー識別子がなければUUIDで新たに作成
     if not user_id:
         user_id = str(uuid.uuid4())
@@ -578,31 +575,24 @@ async def chat_with_OpenAI_stream(user_id: str, prompt: str,system: str):
     # ユーザー識別子に対応する会話履歴を取得、なければ新たに作成
     systemmessage = f"System:{system},この内容に従って出力"
 
-
     try:
         client = AsyncClient(
             provider=g4f.Provider.OpenaiChat,
             api_key=read_cookie_files(cookies_dir),  # 正しい関数名に修正
         )
-        buffer = ""
         async for chunk in client.chat.completions.create(
             model="auto",
             messages=[{"role": "user", "content":systemmessage +prompt}],
             stream=True,
         ):
             if chunk.choices[0].delta.content:
-                buffer += chunk.choices[0].delta.content.replace(' ', '&nbsp;')
-                for char in buffer:  # 一文字ずつ処理
-                    yield f"data: {char}\n\n"
+                words = chunk.choices[0].delta.content.split(' ')
+                for word in words:  # 最後の単語も含めてすべての単語を送信
+                    yield f"data: {json.dumps({'response': escape(word)})}\n\n"
                     await asyncio.sleep(0.02)  # 0.02秒待機 (調整可能)
-                buffer = ""  # バッファをクリア
-        if buffer:
-            yield f"data: {char}\n\n"
     except Exception as e:
         logging.error(f"Error occurred: {str(e)}")
         yield f"data: OpenAIStreamプロバイダーでエラーが発生しました。何度も起きる場合は他のプロバイダーを使用してください\n\n"  # エラーメッセージをyieldします
-
-
 
 
 
@@ -623,16 +613,16 @@ async def stream(request: Request):
         token = "NotToken"
 
     if not prompt:
-        return StreamingResponse(iter(["data: No question asked\n\n"]), media_type="text/event-stream")
+        return StreamingResponse(iter([f"data: {json.dumps({'response': escape("No Prompt")})}\n\n"]), media_type="text/event-stream")
 
     # 文字数制限を設ける
     if len(prompt) > 1000:
-        return StreamingResponse(iter(["data: 1000文字以内に収めてください\n\n"]),media_type="text/event-stream")
+        return StreamingResponse(iter([f"data:  {json.dumps({'response': escape("1000文字以内に収めてください")})}\n\n"]),media_type="text/event-stream")
     
     if check_provider(provider):
         checkToken = check_token(token)
         if checkToken == False:
-            return StreamingResponse(iter(["data: このプロバイダーを使用するにはTokenが必要です(形式が間違っているか無効である可能性があります)\n\n"]),media_type="text/event-stream")
+            return StreamingResponse(iter([f"data: {json.dumps({'response': escape("このプロバイダーを使用するにはTokenが必要です(形式が間違っているか無効である可能性があります)")})}\n\n"]),media_type="text/event-stream")
         
 
     if not system:
@@ -642,7 +632,7 @@ async def stream(request: Request):
     is_banned, reason = check_and_ban(user_id, request)  # antibot.py の関数を呼び出す
 
     if is_banned:
-        return StreamingResponse(iter([f"data:{reason}"]), media_type="text/event-stream")
+        return StreamingResponse(iter([f"data: {json.dumps({'response': escape(reason)})}\n\n"]), media_type="text/event-stream")
 
 
 
@@ -651,7 +641,7 @@ async def stream(request: Request):
     elif provider == 'Gemini':
         return StreamingResponse(g4f_gemini_stream(user_id, prompt,system),media_type="text/event-stream")
     else:
-        return JSONResponse(iter(["data:Invalid provider specified\n\n"]),media_type="text/event-stream")
+        return StreamingResponse(iter([f"data: {json.dumps({'response': escape("Invalid provider specified")})}"]),media_type="text/event-stream")
 
 
 

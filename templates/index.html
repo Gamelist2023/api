@@ -1317,46 +1317,45 @@ const temporaryDiv = document.createElement('div');
 
       // ストリーミングメッセージを追加する関数
       const appendStreamingMessage = (chunk) => {
-        let messageElement = document.querySelector('.chat-messages .chat-message:last-child');
+    let messageElement = document.querySelector('.chat-messages .chat-message:last-child');
 
-        if (messageElement === null || messageElement.querySelector('.message-name').textContent !== provider) {
-          // 新しいメッセージ要素を作成
-          messageElement = document.createElement('div');
-          messageElement.classList.add('chat-message');
+    if (messageElement === null || messageElement.querySelector('.message-name').textContent !== provider) {
+        // 新しいメッセージ要素を作成
+        messageElement = document.createElement('div');
+        messageElement.classList.add('chat-message');
 
-          // メッセージ名要素を作成
-          const messageNameElement = document.createElement('div');
-          messageNameElement.classList.add('message-name');
-          messageNameElement.textContent = provider; 
-          messageElement.appendChild(messageNameElement);
+        // メッセージ名要素を作成
+        const messageNameElement = document.createElement('div');
+        messageNameElement.classList.add('message-name');
+        messageNameElement.textContent = provider; 
+        messageElement.appendChild(messageNameElement);
 
-          // メッセージ内容要素を作成
-          messageContentElement = document.createElement('div');
-          messageContentElement.classList.add('message-content');
-          messageElement.appendChild(messageContentElement);
+        // メッセージ内容要素を作成
+        messageContentElement = document.createElement('div');
+        messageContentElement.classList.add('message-content');
+        messageElement.appendChild(messageContentElement);
 
-          // チャットメッセージに追加
-          document.querySelector('.chat-messages').appendChild(messageElement);
-        }
-
-        const lines = chunk.split('\n');
-lines.forEach(line => {
-  if (line.startsWith("data: ")) {
-    const message = line.replace(/^data:\s*/gm, ''); // "data: " のみを削除
-    const formattedMessage = message
-  .replace(/&/g, '&amp;')
-  .replace(/</g, '&lt;')
-  .replace(/>/g, '&gt;');
-
-
-      
-    if (formattedMessage === '') {
-      messageContentElement.innerHTML += '<br>'; // メッセージが空の場合は改行を追加
-    } else {
-      messageContentElement.innerHTML += formattedMessage; // メッセージをそのまま追加
+        // チャットメッセージに追加
+        document.querySelector('.chat-messages').appendChild(messageElement);
     }
-  }
-});
+
+    const lines = chunk.split('\n');
+    lines.forEach(line => {
+        if (line.startsWith("data: ")) {
+            const message = line.replace(/^data:\s*/gm, ''); // "data: " のみを削除
+            const parsedMessage = JSON.parse(message); // JSON文字列をパース
+            const formattedMessage = parsedMessage.response // 'response'の値を取得
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+
+            if (formattedMessage === '') {
+                messageContentElement.innerHTML += ''; // メッセージが空の場合は改行を追加
+            } else {
+                messageContentElement.innerHTML += formattedMessage; // メッセージをそのまま追加
+            }
+        }
+    });
 
       };
 
