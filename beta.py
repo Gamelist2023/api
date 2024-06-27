@@ -613,7 +613,7 @@ async def stream(request: Request):
         token = "NotToken"
 
     if not prompt:
-        return StreamingResponse(iter([f"data: {json.dumps({'response': escape("No Prompt")})}\n\n"]), media_type="text/event-stream")
+        return StreamingResponse(iter([f"data:  {json.dumps({'response': escape("質問を入力してください")})}\n\n"]),media_type="text/event-stream")
 
     # 文字数制限を設ける
     if len(prompt) > 1000:

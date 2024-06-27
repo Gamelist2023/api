@@ -1,8 +1,10 @@
 INFO:     Will watch for changes in these directories: ['C:\\Users\\issei\\Music\\api-1']
 INFO:     Uvicorn running on http://0.0.0.0:5000 (Press CTRL+C to quit)
-INFO:     Started reloader process [30460] using WatchFiles
-INFO:     Started server process [27324]
+INFO:     Started reloader process [24416] using WatchFiles
+INFO:     Started server process [35372]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 None
-INFO:     192.168.128.193:50653 - "POST /stream HTTP/1.1" 200 OK
+INFO:     192.168.128.193:51644 - "POST /stream HTTP/1.1" 200 OK
+INFO:     192.168.128.193:51652 - "POST /stream HTTP/1.1" 200 OK
+INFO:     192.168.128.193:51718 - "POST /stream HTTP/1.1" 200 OK
