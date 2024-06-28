@@ -371,7 +371,7 @@ async def lianocloud(user_id: str, prompt: str, system: str):
         return f"Liaobotsプロバイダー,model claude-3でエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください"  # エラーメッセージを返す
 
 
-async def gpt_4o(user_id: str, prompt: str, system: str):
+async def command_r(user_id: str, prompt: str, system: str):
     if not user_id:
         user_id = str(uuid.uuid4())
 
@@ -380,14 +380,14 @@ async def gpt_4o(user_id: str, prompt: str, system: str):
             provider=g4f.Provider.Liaobots,
         )
         response = await client.chat.completions.create(
-                model="gpt-4o-free",
+                model="CohereForAI/c4ai-command-r-plus",
                 systemPrompt=system,
                 messages=[{"role": "user", "content": prompt}],
             )
         return response.choices[0].message.content
     except Exception as e:
         logging.error(f"Error occurred: {str(e)}")
-        return f"Liaobotsプロバイダーmodel,gpt-4oでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください"  # エラーメッセージを返す
+        return f"CohereForAI/c4ai-command-r-plus,modelでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください"  # エラーメッセージを返す
 
 async def pizzagpt(user_id: str, prompt: str,):
     if not user_id:
@@ -424,8 +424,8 @@ async def process_chat(provider: str, user_id: str, prompt: str, system: str = A
         response = await reka_core(user_id, prompt)
     elif provider == "Claude3":
         response = await lianocloud(user_id, prompt, system)
-    elif provider == "gpt-4o":
-        response = await gpt_4o(user_id, prompt, system)
+    elif provider == "command_r":
+        response = await command_r(user_id, prompt, system)
     elif provider == "ask":
         response = await ask(user_id, prompt,system)
     elif provider == "zundamon":

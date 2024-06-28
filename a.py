@@ -12,7 +12,7 @@ g4f.debug.logging = True  # Enable debug logging
 cookies_dir = os.path.join(os.path.dirname(__file__), "har")
 
 client = Client(
-        provider=Pizzagpt,
+        provider=HuggingChat,
         #api_key="AIzaSyA_WGA0iKHarVC_XOEE_GkH4SPPypqWYsg"
         api_key=read_cookie_files(cookies_dir)
 
@@ -20,7 +20,7 @@ client = Client(
 
     )
 response =  client.chat.completions.create(
-    model="",
+    model="CohereForAI/c4ai-command-r-plus",
     messages=[{"role": "user", "content": "こんにちはあなたの名前は？"}],
   #  stream=True,
 )
