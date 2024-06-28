@@ -863,39 +863,39 @@ let autoSaveInterval;
       askQuestion(); 
     });
 
-function saveCurrentConversation() {
-    const messages = document.querySelectorAll('.chat-message');
-    const conversationKey = `conversation-${currentConversationIndex}`;
-    const conversationData = Array.from(messages).map((message, index) => {
-      const messageContentElement = message.querySelector('.message-content');
-      const hasImage = messageContentElement.querySelector('img') !== null;
-      const provider = message.querySelector('.message-name').textContent.replace(/:$/, ''); // プロバイダ名を取得
+    function saveCurrentConversation() {
+  const messages = document.querySelectorAll('.chat-message');
+  const conversationKey = `conversation-${currentConversationIndex}`;
+  const conversationData = Array.from(messages).map((message, index) => {
+    const messageContentElement = message.querySelector('.message-content');
+    const messageType = messageContentElement.querySelector('img') !== null ? 'image' : 'text';
+    const provider = message.querySelector('.message-name').textContent.replace(/:$/, '');
 
-      if (hasImage) {
-        // 画像メッセージの場合、画像のsrcとaltテキストを保存
-        const imageSrc = messageContentElement.querySelector('img').src;
-        const imageAlt = messageContentElement.querySelector('img').alt;
-        localStorage.setItem(`message-${index}`, JSON.stringify({ src: imageSrc, alt: imageAlt }));
-        return {
-          content: `message-${index}`,
-          isUser: message.classList.contains('user'),
-          provider: provider // プロバイダ名を追加
-        };
-      } else {
-        // テキストメッセージの場合は、内容とプロバイダ名を保存
-        const messageContentElement = message.querySelector('.message-content');
-    const markdownContent = convertHtmlAndMarkdown(messageContentElement.innerHTML, true); // HTMLからMarkdownに変換
-    return {
-      content: markdownContent, // Markdown形式で保存
-      isUser: message.classList.contains('user'),
-      provider: provider 
-    };
-      }
-    });
+    if (messageType === 'image') {
+      // 画像メッセージの場合 (変更なし)
+      const imageSrc = messageContentElement.querySelector('img').src;
+      const imageAlt = messageContentElement.querySelector('img').alt;
+      localStorage.setItem(`message-${index}`, JSON.stringify({ src: imageSrc, alt: imageAlt }));
+      return {
+        type: messageType,
+        content: `message-${index}`,
+        isUser: message.classList.contains('user'),
+        provider: provider
+      };
+    } else {
+      // テキストメッセージの場合: HTMLを直接contentに格納
+      return {
+        type: messageType,
+        content: messageContentElement.innerHTML, // HTMLを直接ここに格納
+        isUser: message.classList.contains('user'),
+        provider: provider
+      };
+    }
+  });
 
-    localStorage.setItem(conversationKey, JSON.stringify(conversationData));
-    document.cookie = `${conversationKey}=true; path=/`;
-  }
+  localStorage.setItem(conversationKey, JSON.stringify(conversationData));
+  document.cookie = `${conversationKey}=true; path=/`;
+}
 
   function convertHtmlAndMarkdown(text, toMarkdown) {
   // 正規表現の定義
@@ -981,13 +981,16 @@ function deleteConversation(index) {
 
 function loadConversation(index) {
   clearChatWindow();
-
   const conversationKey = `conversation-${index}`;
   const conversationData = JSON.parse(localStorage.getItem(conversationKey));
 
   if (conversationData) {
+    let combinedMessage = ""; 
+    let lastMessageIsUser = false;
+
     conversationData.forEach((messageData, messageIndex) => {
-      if (messageData.content && typeof messageData.content === 'string' && messageData.content.startsWith('message-')) { 
+      if (messageData.type === 'image') {
+        // 画像メッセージは結合せず、そのまま表示
         const imageData = JSON.parse(localStorage.getItem(messageData.content));
         if (imageData && imageData.src) {
           const img = document.createElement('img');
@@ -999,10 +1002,38 @@ function loadConversation(index) {
           console.error("画像データが不正です:", imageData);
           displayErrorMessage("画像の読み込みに失敗しました。");
         }
-      } else {
-        addMessageToChat(markdownToHtml(messageData.content), messageData.isUser, true, messageData.provider);
+        combinedMessage = ""; // 画像メッセージ後はリセット
+        lastMessageIsUser = false; 
+      } else if (messageData.type === 'text') {
+        // テキストメッセージの場合
+        const messageHTML = messageData.content; // HTMLが直接格納されている
+
+        if (messageHTML) {
+          if (messageData.isUser) {
+            // ユーザーメッセージの場合
+            if (combinedMessage !== "") {
+              // 既に結合されたメッセージがある場合は表示
+              addMessageToChat(combinedMessage, lastMessageIsUser, true);
+              combinedMessage = "";
+            }
+            combinedMessage = messageHTML; // ユーザーメッセージを結合開始
+            lastMessageIsUser = true;
+          } else {
+            // AIメッセージの場合
+            combinedMessage += messageHTML; // ユーザーメッセージに結合
+            lastMessageIsUser = false;
+          }
+        } else {
+          console.error("メッセージのHTMLが見つかりません。", messageData.content);
+          displayErrorMessage("メッセージの読み込みに失敗しました。");
+        }
       }
     });
+
+    // 最後のメッセージを表示
+    if (combinedMessage !== "") {
+      addMessageToChat(combinedMessage, lastMessageIsUser, true);
+    }
   } else {
     console.error("会話履歴が読み込めません。");
   }
@@ -1300,12 +1331,16 @@ const temporaryDiv = document.createElement('div');
           const { done, value } = await reader.read();
 
           if (done) {
-          // ストリーミング完了時の処理
-          const markdownContent = convertHtmlAndMarkdown(messageContentElement.innerHTML, true); // HTMLからMarkdownに変換
-          messageContentElement.innerHTML = markdownToHtml(markdownContent); // MarkdownをHTMLに変換して置き換え
-          saveCurrentConversation();
-          break;
-        }
+            // ストリーミング完了時の処理
+            const messageKey = `message-${Date.now()}`; 
+            const markdownContent = convertHtmlAndMarkdown(messageContentElement.innerHTML, true); 
+            messageContentElement.innerHTML = markdownToHtml(markdownContent);
+
+            // saveCurrentConversation() を呼び出す前に、メッセージのHTMLが更新されるのを待つ
+
+            saveCurrentConversation();
+            break;
+          }
 
           const chunk = decoder.decode(value);
           appendStreamingMessage(chunk); 

@@ -479,7 +479,7 @@ async def chat(request: Request, provider: str, prompt: str, token: str, system:
         
 
     # アンチボットシステムでユーザーをチェック
-    is_banned, reason = check_and_ban(user_id, request)  # antibot.py の関数を呼び出す
+    is_banned, reason = check_and_ban(user_id, request, token)  # antibot.py の関数を呼び出す
 
     if is_banned:
         return JSONResponse(content={"response": reason}, status_code=400)
@@ -528,7 +528,7 @@ async def post_chat(request: Request):
         
 
     # アンチボットシステムでユーザーをチェック
-    is_banned, reason = check_and_ban(user_id, request)  # antibot.py の関数を呼び出す
+    is_banned, reason = check_and_ban(user_id, request, token)
 
     if is_banned:
         return JSONResponse(content={"response": reason}, status_code=400)
@@ -551,7 +551,6 @@ async def g4f_gemini_stream(user_id: str, prompt: str,system: str):
             provider=Gemini,
             api_key=read_cookie_files(cookies_dir),
         )
-        buffer = ""
         async for chunk in client.chat.completions.create(
             model="auto",
             messages=[{"role": "user", "content":systemmessage +prompt}],
@@ -630,7 +629,7 @@ async def stream(request: Request):
         system = AI_prompt
 
     # アンチボットシステムでユーザーをチェック
-    is_banned, reason = check_and_ban(user_id, request)  # antibot.py の関数を呼び出す
+    is_banned, reason = check_and_ban(user_id, request, token)
 
     if is_banned:
         return StreamingResponse(iter([f"data: {json.dumps({'response': escape(reason)})}\n\n"]), media_type="text/event-stream")
@@ -650,7 +649,7 @@ async def stream(request: Request):
 
 
 @app.get("/generate_image")
-async def generate_image(request: Request, prompt: Optional[str] = None):
+async def generate_image(request: Request,token: str, prompt: Optional[str] = None):
     user_id = request.query_params.get('user_id') or request.client.host
 
     if not prompt:
@@ -667,7 +666,7 @@ async def generate_image(request: Request, prompt: Optional[str] = None):
     last_prompt[user_id] = prompt
 
     # アンチボットシステムでユーザーをチェック
-    is_banned, reason = check_and_ban(user_id, request)  # antibot.py の関数を呼び出す
+    is_banned, reason = check_and_ban(user_id, request, token)
 
     if is_banned:
         return JSONResponse(content={"response": reason}, status_code=429)
