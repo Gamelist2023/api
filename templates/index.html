@@ -564,6 +564,10 @@
       <input type="checkbox" id="showSplashScreen" checked>
       <label for="showSplashScreen">起動画像を表示</label>
     </div>
+    <div class="setting-option">
+  <input type="checkbox" id="includeConversationHistory">
+  <label for="includeConversationHistory">会話履歴をプロンプトに含める</label>
+</div>
     <button id="generateTokenButton">Tokenを発行</button>
       <div id="tokenResult" style="display:none;">
       <span>API Token: </span><span id="generatedToken"></span> <button onclick="copyToken()">コピー</button>
@@ -739,6 +743,10 @@ let currentConversationIndex = -1;
 let userName = 'ユーザー';
 let messageCount = 0;
 let autoSaveInterval;
+let includeConversationHistory = false; // 会話履歴を含めるかの設定 (デフォルトはtrue)
+
+
+
 
     function loadConversationsFromCookie() {
       const cookieValue = document.cookie.split('; ').find(row => row.startsWith('conversations='))?.split('=')[1];
@@ -755,18 +763,20 @@ let autoSaveInterval;
       document.cookie = `conversations=${encodeURIComponent(JSON.stringify(conversations))}; path=/`;
     }
 
-    function saveSettings() {
+   function saveSettings() {
   const settings = {
     provider: document.getElementById('provider').value,
     userName: document.getElementById('userName').value,
     token: document.getElementById('APItoken').value,
     showSystemPrompt: document.getElementById('showSystemPrompt').checked,
-    showSplashScreen: document.getElementById('showSplashScreen').checked 
+    showSplashScreen: document.getElementById('showSplashScreen').checked,
+    // 会話履歴を含めるかどうかの設定を保存
+    includeConversationHistory: document.getElementById('includeConversationHistory').checked,
   };
   document.cookie = `settings=${encodeURIComponent(JSON.stringify(settings))}; path=/`;
 }
 
-    function loadSettings() {
+   function loadSettings() {
   const cookieValue = document.cookie.split('; ').find(row => row.startsWith('settings='))?.split('=')[1];
   if (cookieValue) {
     try {
@@ -775,8 +785,11 @@ let autoSaveInterval;
       document.getElementById('userName').value = settings.userName;
       document.getElementById('APItoken').value = settings.token;
       document.getElementById('showSystemPrompt').checked = settings.showSystemPrompt;
-      // 起動画像表示設定
-      document.getElementById('showSplashScreen').checked = settings.showSplashScreen; 
+      document.getElementById('showSplashScreen').checked = settings.showSplashScreen;
+      // 会話履歴を含めるかどうかの設定を読み込み
+      includeConversationHistory = settings.includeConversationHistory ?? true;
+      document.getElementById('includeConversationHistory').checked = includeConversationHistory;
+
       if (settings.showSystemPrompt) {
         document.getElementById('system-prompt-input').style.display = 'block';
       }
@@ -985,10 +998,7 @@ function loadConversation(index) {
   const conversationData = JSON.parse(localStorage.getItem(conversationKey));
 
   if (conversationData) {
-    let combinedMessage = ""; 
-    let lastMessageIsUser = false;
-
-    conversationData.forEach((messageData, messageIndex) => {
+    conversationData.forEach((messageData) => {
       if (messageData.type === 'image') {
         // 画像メッセージは結合せず、そのまま表示
         const imageData = JSON.parse(localStorage.getItem(messageData.content));
@@ -1002,42 +1012,30 @@ function loadConversation(index) {
           console.error("画像データが不正です:", imageData);
           displayErrorMessage("画像の読み込みに失敗しました。");
         }
-        combinedMessage = ""; // 画像メッセージ後はリセット
-        lastMessageIsUser = false; 
       } else if (messageData.type === 'text') {
-        // テキストメッセージの場合
-        const messageHTML = messageData.content; // HTMLが直接格納されている
+        const messageHTML = messageData.content; 
+        const messageContainer = document.querySelector('.chat-messages');
+        let messageElement = messageContainer.querySelector('.chat-message:last-child'); 
 
-        if (messageHTML) {
-          if (messageData.isUser) {
-            // ユーザーメッセージの場合
-            if (combinedMessage !== "") {
-              // 既に結合されたメッセージがある場合は表示
-              addMessageToChat(combinedMessage, lastMessageIsUser, true);
-              combinedMessage = "";
-            }
-            combinedMessage = messageHTML; // ユーザーメッセージを結合開始
-            lastMessageIsUser = true;
-          } else {
-            // AIメッセージの場合
-            combinedMessage += messageHTML; // ユーザーメッセージに結合
-            lastMessageIsUser = false;
-          }
+        // 最後のメッセージが現在のメッセージと同じ送信元の場合、メッセージを追加
+        if (messageElement && 
+            ((messageData.isUser && messageElement.classList.contains('user')) || 
+             (!messageData.isUser && messageElement.classList.contains('ai') && messageData.provider === messageElement.querySelector('.message-name').textContent.replace(/:$/, '')))) { 
+          const messageContent = messageElement.querySelector('.message-content');
+          messageContent.innerHTML += messageHTML; 
         } else {
-          console.error("メッセージのHTMLが見つかりません。", messageData.content);
-          displayErrorMessage("メッセージの読み込みに失敗しました。");
+          // 新しいメッセージ要素を作成
+          addMessageToChat(messageHTML, messageData.isUser, true, messageData.provider);
         }
       }
     });
-
-    // 最後のメッセージを表示
-    if (combinedMessage !== "") {
-      addMessageToChat(combinedMessage, lastMessageIsUser, true);
-    }
   } else {
     console.error("会話履歴が読み込めません。");
   }
 }
+
+
+
 function clearChatWindow() {
   document.querySelector('.chat-messages').innerHTML = '';
 }
@@ -1058,22 +1056,25 @@ function addMessageToChat(message, isUser, isReloading = false, providerName = n
   messageElement.classList.add('chat-message');
   if (isUser) {
     messageElement.classList.add('user');
+  } else {
+    messageElement.classList.add('ai');
   }
 
   const messageNameElement = document.createElement('div');
   messageNameElement.classList.add('message-name');
   messageNameElement.textContent = isUser ? userName : providerName || document.getElementById('provider').options[document.getElementById('provider').selectedIndex].text;
-
-  messageElement.appendChild(messageNameElement); 
+  messageElement.appendChild(messageNameElement);
 
   const messageContent = document.createElement('div');
   messageContent.classList.add('message-content');
 
   if (isReloading && message.startsWith('<img')) {
-    messageContent.innerHTML = message; 
+    messageContent.innerHTML = message;
   } else {
+    // HTMLエスケープ処理
+    const escapedMessage = message.replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>');
     const converter = new showdown.Converter();
-    const htmlWithImages = message.replace(/!\[(.*?)\]\((.*?)\)/gi, '<img src="$2" alt="$1" style="width: 300px">');
+    const htmlWithImages = escapedMessage.replace(/!\[(.*?)\]\((.*?)\)/gi, '<img src="$2" alt="$1" style="width: 300px">');
     messageContent.innerHTML = converter.makeHtml(htmlWithImages);
   }
 
@@ -1254,25 +1255,15 @@ const temporaryDiv = document.createElement('div');
       return new Date(oneYearAgo.getTime() + Math.random() * (now.getTime() - oneYearAgo.getTime())).toLocaleString();
     }
     function convertDivToP(divHtml) {
-      let userIds = {};
-      let nextUserId = 1;
-      return divHtml.replace(/<div class="chat-message( user)?"/g, (match, isUser) => {
-    // isUser が true の場合はユーザーのメッセージ、false の場合はAIのメッセージ
-    const messageClass = isUser ? 'user' : 'ai';
-    return `<p class="chat-message ${messageClass}">`; // メッセージクラスを追加
-  })
-      .replace(/<div class="message-name">([^<]+)<\/div>/g, (match, userName) => { 
-    // userName にはユーザー名またはAI名が含まれている
-    const userId = userName || `名無し${nextUserId++}`;
-    userIds[userId] = userId;
-    const nameClass = userName === userName ? 'user_name' : 'ai_name'; // クラス名でユーザーとAIを区別
-    return `<span class="${nameClass}">${userId}:</span>`; 
-  })
-      .replace(/<div class="message-content">/g, '')
-      .replace(/<\/div>/g, '</span><br>') 
-      .replace(/<p id="message-\d+">/g, '') 
-      .replace(/<\/p>/g, ''); 
-    }
+  return divHtml
+    .replace(/<div class="chat-message user?"/g, '<p class="chat-message user">')
+    .replace(/<div class="chat-message ai?"/g, '<p class="chat-message ai">')
+    .replace(/<div class="message-name">([^<]+)<\/div>/g, '<span class="message-name">$1:</span>')
+    .replace(/<div class="message-content">/g, '')
+    .replace(/<\/div>/g, '</span><br>')
+    .replace(/<p id="message-\d+">/g, '')
+    .replace(/<\/p>/g, '');
+}
 
     function openWindow() {
       window.open("/home/update.html", "MsgWindow", "width=400,height=400");
@@ -1283,31 +1274,90 @@ const temporaryDiv = document.createElement('div');
     var dotsInterval;
     var isRequesting = false; 
     var currentFetchController = null; 
+    let lastMessageIsUser = false; // 初期化
 
-    function askQuestion() {
-    if (isRequesting) { 
-      return;
+ function askQuestion() {
+  if (isRequesting) {
+    return;
+  }
+  isRequesting = true;
+  button.disabled = true;
+  button.classList.add('loading');
+  dots = 0;
+  dotsInterval = setInterval(() => {
+    button.innerText = '生成中' + '.'.repeat(dots + 1);
+    dots = (dots + 1) % 3;
+  }, 500);
+
+  var text = document.getElementById('question').value;
+  var provider = document.getElementById('provider').value;
+  var systems = document.getElementById('system-prompt-input').value;
+  var token = document.getElementById('APItoken').value;
+  document.getElementById('question').value = '';
+  addMessageToChat(text, true);
+  lastMessageIsUser = true; // ユーザーからのメッセージを追加した後で更新
+  document.querySelector('.chat-messages').scrollTop = document.querySelector('.chat-messages').scrollHeight;
+
+ // 会話履歴を準備
+let conversationHistory = '';
+if (includeConversationHistory) {
+  const chatMessages = document.querySelectorAll('.chat-messages .chat-message');
+  let previousMessage = null; // 一つ前のメッセージを保持
+
+  chatMessages.forEach(message => {
+    const messageContent = message.querySelector('.message-content').textContent;
+    const currentMessage = `${messageContent}\n`;
+
+    // 現在のメッセージが一つ前のメッセージと異なる場合のみ追加
+    if (currentMessage !== previousMessage) {
+      conversationHistory += currentMessage;
+      previousMessage = currentMessage; // 一つ前のメッセージを更新
     }
-    isRequesting = true;
-    button.disabled = true;
-    button.classList.add('loading'); 
-    dots = 0;
-    dotsInterval = setInterval(() => {
-      button.innerText = '生成中' + '.'.repeat(dots + 1);
-      dots = (dots + 1) % 3; 
-    }, 500); 
+  });
+}
 
-      var text = document.getElementById('question').value;
-      var provider = document.getElementById('provider').value;
-      var systems = document.getElementById('system-prompt-input').value;
-      var token = document.getElementById('APItoken').value;
 
-      document.getElementById('question').value = '';
-      addMessageToChat(text, true);
-      document.querySelector('.chat-messages').scrollTop = document.querySelector('.chat-messages').scrollHeight;
+  if (provider === 'dell3') {
+    // 画像生成の場合
+    fetch('/generate_image?prompt=' + encodeURIComponent(text))
+      .then(response => response.json())
+      .then(data => {
+        data.images.forEach(imageData => {
+          if (imageData) {
+            const img = document.createElement('img');
+            img.src = 'data:image/png;base64,' + imageData;
+            img.style.width = '300px';
+            addMessageToChat(img.outerHTML, false, true, provider);
+            saveCurrentConversation();
+            resetButtonState();
+          }
+        });
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        handleError();
+      });
 
-       if (provider.startsWith("!")) { 
-           provider = provider.substring(1); 
+  } else if (provider.startsWith("!")) {
+    provider = provider.substring(1);
+
+    // ストリーミングリクエストの場合
+    let promptToSend = conversationHistory;
+
+    // 最後のメッセージがユーザーのものでない場合のみ、ユーザー名とメッセージを追加
+    if (!lastMessageIsUser) {
+  const newUserMessage = `${text}`;
+  if (!promptToSend.endsWith(newUserMessage)) {
+    promptToSend += newUserMessage;
+  }
+}
+// 会話履歴を含める場合のみ、それをプロンプトに追加
+if (includeConversationHistory) {
+  promptToSend = conversationHistory + "\n---\n" + promptToSend;
+} else {
+  promptToSend = text; // 会話履歴を含めない場合は、ユーザーの入力テキストだけをプロンプトに使用
+}
+
 
     fetch('/stream', {
       method: 'POST',
@@ -1315,7 +1365,7 @@ const temporaryDiv = document.createElement('div');
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        'prompt': text,
+        'prompt': promptToSend,
         'provider': provider,
         'system': systems,
         'token': token
@@ -1324,6 +1374,52 @@ const temporaryDiv = document.createElement('div');
     .then(response => {
       const reader = response.body.getReader();
       const decoder = new TextDecoder('utf-8');
+      lastMessageIsUser = false; // AIからのメッセージを追加した後で更新
+
+      const appendStreamingMessage = (chunk) => {
+        let messageElement = document.querySelector('.chat-messages .chat-message:last-child');
+
+        if (messageElement === null || messageElement.querySelector('.message-name').textContent !== provider) {
+          // 新しいメッセージ要素を作成
+          messageElement = document.createElement('div');
+          messageElement.classList.add('chat-message');
+
+          // メッセージ名要素を作成
+          const messageNameElement = document.createElement('div');
+          messageNameElement.classList.add('message-name');
+          messageNameElement.textContent = provider;
+          messageElement.appendChild(messageNameElement);
+
+          // メッセージ内容要素を作成
+          messageContentElement = document.createElement('div');
+          messageContentElement.classList.add('message-content');
+          messageElement.appendChild(messageContentElement);
+
+          // チャットメッセージに追加
+          document.querySelector('.chat-messages').appendChild(messageElement);
+        }
+
+        const lines = chunk.split('\n');
+        lines.forEach(line => {
+          if (line.startsWith("data: ")) {
+            const message = line.replace(/^data:\s*/gm, '');
+            const parsedMessage = JSON.parse(message);
+            const formattedMessage = parsedMessage.response
+              .replace(/&/g, '&')
+              .replace(/</g, '<')
+              .replace(/>/g, '>');
+
+            // マークダウンをHTMLに変換
+            const html = markdownToHtml(formattedMessage);
+
+            if (formattedMessage === '') {
+              messageContentElement.innerHTML += '<br>';
+            } else {
+              messageContentElement.innerHTML += html;
+            }
+          }
+        });
+      };
 
       const processStream = async () => {
         let streamedMessage = '';
@@ -1332,115 +1428,66 @@ const temporaryDiv = document.createElement('div');
 
           if (done) {
             // ストリーミング完了時の処理
-            const messageKey = `message-${Date.now()}`; 
-            const markdownContent = convertHtmlAndMarkdown(messageContentElement.innerHTML, true); 
+            const messageKey = `message-${Date.now()}`;
+            const messageContentElement = document.querySelector('.chat-messages .chat-message:last-child .message-content');
+            const markdownContent = convertHtmlAndMarkdown(messageContentElement.innerHTML, true);
             messageContentElement.innerHTML = markdownToHtml(markdownContent);
-
-            // saveCurrentConversation() を呼び出す前に、メッセージのHTMLが更新されるのを待つ
-
             saveCurrentConversation();
             break;
           }
 
           const chunk = decoder.decode(value);
-          appendStreamingMessage(chunk); 
+          appendStreamingMessage(chunk);
         }
 
         resetButtonState();
-        saveCurrentConversation(); 
+        saveCurrentConversation();
       };
 
-      // ストリーミングメッセージを追加する関数
-      const appendStreamingMessage = (chunk) => {
-    let messageElement = document.querySelector('.chat-messages .chat-message:last-child');
-
-    if (messageElement === null || messageElement.querySelector('.message-name').textContent !== provider) {
-        // 新しいメッセージ要素を作成
-        messageElement = document.createElement('div');
-        messageElement.classList.add('chat-message');
-
-        // メッセージ名要素を作成
-        const messageNameElement = document.createElement('div');
-        messageNameElement.classList.add('message-name');
-        messageNameElement.textContent = provider; 
-        messageElement.appendChild(messageNameElement);
-
-        // メッセージ内容要素を作成
-        messageContentElement = document.createElement('div');
-        messageContentElement.classList.add('message-content');
-        messageElement.appendChild(messageContentElement);
-
-        // チャットメッセージに追加
-        document.querySelector('.chat-messages').appendChild(messageElement);
-    }
-
-    const lines = chunk.split('\n');
-    lines.forEach(line => {
-        if (line.startsWith("data: ")) {
-            const message = line.replace(/^data:\s*/gm, ''); // "data: " のみを削除
-            const parsedMessage = JSON.parse(message); // JSON文字列をパース
-            const formattedMessage = parsedMessage.response // 'response'の値を取得
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;');
-
-            if (formattedMessage === '') {
-                messageContentElement.innerHTML += ''; // メッセージが空の場合は改行を追加
-            } else {
-                messageContentElement.innerHTML += formattedMessage; // メッセージをそのまま追加
-            }
-        }
+      processStream();
+      lastMessageIsUser = false;
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      handleError();
     });
 
-      };
+  } else {
+    // 通常のGETリクエストの場合
+    let promptToSend = conversationHistory;
 
-      processStream(); 
-    })
+    // ユーザー名とメッセージを追加 (メタ情報なし)
+    if (!lastMessageIsUser) {
+  const newUserMessage = `${text}`;
+  if (!promptToSend.endsWith(newUserMessage)) {
+    promptToSend += newUserMessage;
+  }
+}
+// 会話履歴を含める場合のみ、それをプロンプトに追加
+if (includeConversationHistory) {
+  promptToSend = conversationHistory + "\n---\n" + promptToSend;
+} else {
+  promptToSend = text; // 会話履歴を含めない場合は、ユーザーの入力テキストだけをプロンプトに使用
+}
 
 
-    
-        .catch(error => {
-            console.error('Error:', error);
-            handleError(); 
-        });
+    fetch(`/chat?provider=${provider}&prompt=${encodeURIComponent(promptToSend)}&system=${encodeURIComponent(systems)}&token=${encodeURIComponent(token)}`)
+      .then(response => response.json())
+      .then(data => {
+        const decodedData = typeof data === 'object' && data.hasOwnProperty('response') ? unicodeToUtf8(data.response) : unicodeToUtf8(data);
+        addMessageToChat(decodedData, false, false, provider);
+        document.querySelector('.chat-messages').scrollTop = document.querySelector('.chat-messages').scrollHeight;
+        saveCurrentConversation();
+        resetButtonState();
 
-      }  else if (provider === 'dell3') {
-        fetch('/generate_image?prompt=' + encodeURIComponent(text))
-          .then(response => response.json())
-          .then(data => {
-            data.images.forEach(imageData => {
-              if (imageData) {
-                const img = document.createElement('img');
-                img.src = 'data:image/png;base64,' + imageData;
-                img.style.width = '300px';
-                addMessageToChat(img.outerHTML, false, true, provider); // providerNameを追加
-                saveCurrentConversation();
-                resetButtonState();
-              }
-            });
-          })
-          .catch(error => {
-            console.error('Error:', error);
-            handleError(); 
-          });
-
-         } else {
-        // それ以外の場合は通常のGETリクエストを使用
-        fetch(`/chat?provider=${provider}&prompt=${encodeURIComponent(text)}&system=${encodeURIComponent(systems)}&token=${encodeURIComponent(token)}`)
-          .then(response => response.json())
-          .then(data => {
-            const decodedData = typeof data === 'object' && data.hasOwnProperty('response') ? unicodeToUtf8(data.response) : unicodeToUtf8(data);
-            addMessageToChat(decodedData, false, false, provider); // providerNameを追加
-            document.querySelector('.chat-messages').scrollTop = document.querySelector('.chat-messages').scrollHeight;
-            saveCurrentConversation();
-            resetButtonState();
-          })
-          .catch(error => {
-            console.error('Error:', error);
-            handleError(); 
-          });
-      }
-    }
+        lastMessageIsUser = false;
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        handleError();
+      });
+  }
+}
 
     function resetButtonState() {
       clearInterval(dotsInterval);

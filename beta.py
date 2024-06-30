@@ -347,7 +347,7 @@ async def reka_core(user_id: str, prompt: str):
         return clean_response
     except Exception as e:
         logging.error(f"Error occurred: {str(e)}")
-        return f"Bingプロバイダーでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください"  # エラーメッセージを返す
+        return f"Rekaプロバイダーでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください追記：Rekaに関してはCookieの不具合の可能性が大なんで管理者に連絡してください"  # エラーメッセージを返す
 
 
 async def lianocloud(user_id: str, prompt: str, system: str):
@@ -377,7 +377,7 @@ async def command_r(user_id: str, prompt: str, system: str):
 
     try:
         client = AsyncClient(
-            provider=g4f.Provider.Liaobots,
+            provider=g4f.Provider.HuggingChat,
         )
         response = await client.chat.completions.create(
                 model="CohereForAI/c4ai-command-r-plus",
