@@ -196,11 +196,10 @@ async def geminipro(user_id: str, prompt: str):
     try:
         client = AsyncClient(
             provider=GeminiProChat,
-            #api_key=read_cookie_files(cookies_dir),  # 正しい関数名に修正
         )
         response = await client.chat.completions.create(
-            model="default",
-            messages=conversation_history,
+            model="gemini-pro",
+            messages=[{"role": "user", "content": prompt}],
         )
         return response.choices[0].message.content  # 正常な応答を返す
     except Exception as e:
@@ -213,7 +212,7 @@ async def geminipro(user_id: str, prompt: str):
             )
             response = await client.chat.completions.create(
                 model="gemini-1.5-pro-latest",
-                messages=conversation_history,
+                messages=[{"role": "user", "content": prompt}],
             )
             add_ai_response_to_history(user_id, response.choices[0].message.content)
             return response.choices[0].message.content  # Liaobotsからの正常な応答を返す
@@ -563,7 +562,7 @@ async def g4f_gemini_stream(user_id: str, prompt: str,system: str):
                     await asyncio.sleep(0.02)  # 0.02秒待機 (調整可能)
     except Exception as e:
         logging.error(f"Error occurred: {str(e)}")
-        yield f"data: GeminiStreamプロバイダーでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください"  # エラーメッセージを返す
+        yield f"data: {json.dumps({'response': escape('GeminiStreamプロバイダーでエラーが発生しました。何度も起きる場合は他のプロバイダーを使用してください')})}\n\n"
     
 
 async def chat_with_OpenAI_stream(user_id: str, prompt: str, system: str):
@@ -591,7 +590,7 @@ async def chat_with_OpenAI_stream(user_id: str, prompt: str, system: str):
                     await asyncio.sleep(0.02)  # 0.02秒待機 (調整可能)
     except Exception as e:
         logging.error(f"Error occurred: {str(e)}")
-        yield f"data: OpenAIStreamプロバイダーでエラーが発生しました。何度も起きる場合は他のプロバイダーを使用してください\n\n"  # エラーメッセージをyieldします
+        yield f"data: {json.dumps({'response': escape('OpenAIStreamプロバイダーでエラーが発生しました。何度も起きる場合は他のプロバイダーを使用してください')})}\n\n"  # エラーメッセージをyieldします
 
 
 

@@ -9,18 +9,15 @@ import uuid
 
 g4f.debug.logging = True  # Enable debug logging
 
-cookies_dir = os.path.join(os.path.dirname(__file__), "har")
+cookies_dir = os.path.join(os.path.dirname(__file__), "zundamon")
 
 client = Client(
-        provider=HuggingChat,
+        provider=OpenaiChat,
         #api_key="AIzaSyA_WGA0iKHarVC_XOEE_GkH4SPPypqWYsg"
-        api_key=read_cookie_files(cookies_dir)
-
-
-
-    )
+        api_key=read_cookie_files(cookies_dir),
+              )
 response =  client.chat.completions.create(
-    model="CohereForAI/c4ai-command-r-plus",
+    model="auto",
     messages=[{"role": "user", "content": "こんにちはあなたの名前は？"}],
   #  stream=True,
 )

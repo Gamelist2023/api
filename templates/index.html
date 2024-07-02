@@ -1377,49 +1377,50 @@ if (includeConversationHistory) {
       lastMessageIsUser = false; // AIからのメッセージを追加した後で更新
 
       const appendStreamingMessage = (chunk) => {
-        let messageElement = document.querySelector('.chat-messages .chat-message:last-child');
+  let messageElement = document.querySelector('.chat-messages .chat-message:last-child');
 
-        if (messageElement === null || messageElement.querySelector('.message-name').textContent !== provider) {
-          // 新しいメッセージ要素を作成
-          messageElement = document.createElement('div');
-          messageElement.classList.add('chat-message');
+  if (messageElement === null || messageElement.querySelector('.message-name').textContent !== provider) {
+    // 新しいメッセージ要素を作成
+    messageElement = document.createElement('div');
+    messageElement.classList.add('chat-message');
 
-          // メッセージ名要素を作成
-          const messageNameElement = document.createElement('div');
-          messageNameElement.classList.add('message-name');
-          messageNameElement.textContent = provider;
-          messageElement.appendChild(messageNameElement);
+    // メッセージ名要素を作成
+    const messageNameElement = document.createElement('div');
+    messageNameElement.classList.add('message-name');
+    messageNameElement.textContent = provider;
+    messageElement.appendChild(messageNameElement);
 
-          // メッセージ内容要素を作成
-          messageContentElement = document.createElement('div');
-          messageContentElement.classList.add('message-content');
-          messageElement.appendChild(messageContentElement);
+    // メッセージ内容要素を作成
+    messageContentElement = document.createElement('div');
+    messageContentElement.classList.add('message-content');
+    messageElement.appendChild(messageContentElement);
 
-          // チャットメッセージに追加
-          document.querySelector('.chat-messages').appendChild(messageElement);
-        }
+    // チャットメッセージに追加
+    document.querySelector('.chat-messages').appendChild(messageElement);
+  }
 
-        const lines = chunk.split('\n');
-        lines.forEach(line => {
-          if (line.startsWith("data: ")) {
-            const message = line.replace(/^data:\s*/gm, '');
-            const parsedMessage = JSON.parse(message);
-            const formattedMessage = parsedMessage.response
-              .replace(/&/g, '&')
-              .replace(/</g, '<')
-              .replace(/>/g, '>');
+  const lines = chunk.split('\n');
+  lines.forEach(line => {
+    if (line.startsWith("data: ")) {
+      const message = line.replace(/^data:\s*/gm, '');
+      const parsedMessage = JSON.parse(message);
+      const formattedMessage = parsedMessage.response
+        .replace(/&/g, '&')
+        .replace(/</g, '<')
+        .replace(/>/g, '>');
 
-            // マークダウンをHTMLに変換
-            const html = markdownToHtml(formattedMessage);
+      // マークダウンをHTMLに変換
+      const html = markdownToHtml(formattedMessage);
 
-            if (formattedMessage === '') {
-              messageContentElement.innerHTML += '<br>';
-            } else {
-              messageContentElement.innerHTML += html;
-            }
-          }
-        });
-      };
+      if (formattedMessage === '') {
+        messageContentElement.innerHTML += '<br>';
+      } else {
+        messageContentElement.innerHTML += html;
+      }
+    }
+  });
+};
+
 
       const processStream = async () => {
         let streamedMessage = '';
@@ -1430,8 +1431,8 @@ if (includeConversationHistory) {
             // ストリーミング完了時の処理
             const messageKey = `message-${Date.now()}`;
             const messageContentElement = document.querySelector('.chat-messages .chat-message:last-child .message-content');
-            const markdownContent = convertHtmlAndMarkdown(messageContentElement.innerHTML, true);
-            messageContentElement.innerHTML = markdownToHtml(markdownContent);
+         //   const markdownContent = convertHtmlAndMarkdown(messageContentElement.innerHTML, true);
+         //   messageContentElement.innerHTML = markdownToHtml(markdownContent);
             saveCurrentConversation();
             break;
           }
