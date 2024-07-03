@@ -406,6 +406,25 @@ async def pizzagpt(user_id: str, prompt: str,):
         return f"pizzagptプロバイダーでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください"  # エラーメッセージを返す
 
 
+async def bing(user_id: str, prompt: str,):
+    if not user_id:
+        user_id = str(uuid.uuid4())
+        
+    try:
+        client = AsyncClient(
+            provider=g4f.Provider.Bing,
+            api_key=read_cookie_files(cookies_dir),
+        )
+        response = await client.chat.completions.create(
+                model="Copilot",
+                messages=[{"role": "user", "content": prompt}],
+            )
+        return response.choices[0].message.content
+    except Exception as e:
+        logging.error(f"Error occurred: {str(e)}")
+        return f"Bingプロバイダーでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください"  # エラーメッセージを返す
+
+
 AI_prompt = "あなたは優秀なAIですまたユーザーの言語で回答します"
 
 
@@ -431,6 +450,8 @@ async def process_chat(provider: str, user_id: str, prompt: str, system: str = A
         response = await zundamon(user_id, prompt)
     elif provider == "Pizzagpt":
         response = await pizzagpt(user_id, prompt)
+    elif provider == "Bing":
+        response = await bing(user_id, prompt)
     else:
         return JSONResponse(content={"error": "Invalid provider specified"}, status_code=400)
 
@@ -442,7 +463,7 @@ def check_provider(provider: str) -> bool:
     必要とする場合は True、必要としない場合は False を返す。
     """
     # トークン認証が不要なプロバイダーのリスト
-    no_auth_providers = ["Reka", "GeminiPro", "Pizzagpt"]  
+    no_auth_providers = ["Reka", "GeminiPro", "Pizzagpt","Bing"]  
 
     return provider not in no_auth_providers
 

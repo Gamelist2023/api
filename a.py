@@ -4,20 +4,20 @@ from g4f.cookies import set_cookies_dir, read_cookie_files
 import g4f.debug
 import g4f
 import os,json
-from g4f.Provider import HuggingChat,OpenRouter,Blackbox,You,Gemini,Bing,Liaobots,GeminiProChat,OpenaiChat,HuggingFace,Reka,Koala,GeminiPro,Pizzagpt
+from g4f.Provider import HuggingChat,OpenRouter,Blackbox,You,Gemini,Bing,Liaobots,GeminiProChat,OpenaiChat,HuggingFace,Reka,Koala,GeminiPro,Pizzagpt,Openai
 import uuid
 
 g4f.debug.logging = True  # Enable debug logging
 
-cookies_dir = os.path.join(os.path.dirname(__file__), "zundamon")
+cookies_dir = os.path.join(os.path.dirname(__file__), "har")
 
 client = Client(
-        provider=OpenaiChat,
+        provider=Bing,
         #api_key="AIzaSyA_WGA0iKHarVC_XOEE_GkH4SPPypqWYsg"
         api_key=read_cookie_files(cookies_dir),
               )
 response =  client.chat.completions.create(
-    model="auto",
+    model="Copilot",
     messages=[{"role": "user", "content": "こんにちはあなたの名前は？"}],
   #  stream=True,
 )
