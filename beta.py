@@ -572,7 +572,7 @@ async def g4f_gemini_stream(user_id: str, prompt: str,system: str):
             api_key=read_cookie_files(cookies_dir),
         )
         async for chunk in client.chat.completions.create(
-            model="auto",
+            model="gemini",
             messages=[{"role": "user", "content":systemmessage +prompt}],
             stream=True,
         ):
@@ -611,7 +611,34 @@ async def chat_with_OpenAI_stream(user_id: str, prompt: str, system: str):
                     await asyncio.sleep(0.02)  # 0.02秒待機 (調整可能)
     except Exception as e:
         logging.error(f"Error occurred: {str(e)}")
-        yield f"data: {json.dumps({'response': escape('OpenAIStreamプロバイダーでエラーが発生しました。何度も起きる場合は他のプロバイダーを使用してください')})}\n\n"  # エラーメッセージをyieldします
+        yield f"data: {json.dumps({'response': escape('OpenAIStreamプロバイダーでエラーが発生しました。現時点ではwebapi側の問題なんでGemini使ってください,何度も起きる場合は他のプロバイダーを使用してください')})}\n\n"  # エラーメッセージをyieldします
+
+async def hugging_stream(user_id: str, prompt: str, system: str):
+    # ユーザー識別子がなければUUIDで新たに作成
+    if not user_id:
+        user_id = str(uuid.uuid4())
+
+    # ユーザー識別子に対応する会話履歴を取得、なければ新たに作成
+    systemmessage = f"System:{system},この内容に従って出力"
+
+    try:
+        client = AsyncClient(
+            provider=g4f.Provider.HuggingChat,
+            api_key=read_cookie_files(cookies_dir),  # 正しい関数名に修正
+        )
+        async for chunk in client.chat.completions.create(
+            model="CohereForAI/c4ai-command-r-plus",
+            messages=[{"role": "user", "content":systemmessage +prompt}],
+            stream=True,
+        ):
+            if chunk.choices[0].delta.content:
+                words = chunk.choices[0].delta.content.split(' ')
+                for word in words:  # 最後の単語も含めてすべての単語を送信
+                    yield f"data: {json.dumps({'response': escape(word)})}\n\n"
+                    await asyncio.sleep(0.02)  # 0.02秒待機 (調整可能)
+    except Exception as e:
+        logging.error(f"Error occurred: {str(e)}")
+        yield f"data: {json.dumps({'response': escape('c4ai-command-r-plusモデル,HuggingChatプロバイダーでエラーが発生しました。,何度も起きる場合は他のプロバイダーを使用してください')})}\n\n"  # エラーメッセージをyieldします
 
 
 
@@ -660,6 +687,8 @@ async def stream(request: Request):
         return StreamingResponse(chat_with_OpenAI_stream(user_id, prompt, system),media_type="text/event-stream")  # media_type を設定
     elif provider == 'Gemini':
         return StreamingResponse(g4f_gemini_stream(user_id, prompt,system),media_type="text/event-stream")
+    elif provider == 'HuggingChat':
+        return StreamingResponse(hugging_stream(user_id, prompt, system),media_type="text/event-stream")
     else:
         return StreamingResponse(iter([f"data: {json.dumps({'response': escape('Invalid provider specified')})}"]),media_type="text/event-stream")
 
