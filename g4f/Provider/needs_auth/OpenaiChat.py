@@ -37,16 +37,16 @@ from ... import debug
 DEFAULT_HEADERS = {
     "accept": "*/*",
     "accept-encoding": "gzip, deflate, br, zstd",
-    "accept-language": "ja,en;q=0.9,en-GB;q=0.8,en-US;q=0.7",
+    "accept-language": "en-US,en;q=0.5",
     "referer": "https://chatgpt.com/",
-    "sec-ch-ua": "\"Not/A)Brand\";v=\"8\", \"Chromium\";v=\"126\", \"Microsoft Edge\";v=\"126\"",
+    "sec-ch-ua": "\"Brave\";v=\"123\", \"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"123\"",
     "sec-ch-ua-mobile": "?0",
     "sec-ch-ua-platform": "\"Windows\"",
-    "sec-fetch-dest": "document",
+    "sec-fetch-dest": "empty",
     "sec-fetch-mode": "cors",
     "sec-fetch-site": "same-origin",
     "sec-gpc": "1",
-    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0"
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
 }
 
 class OpenaiChat(AsyncGeneratorProvider, ProviderModelMixin):
@@ -406,7 +406,12 @@ class OpenaiChat(AsyncGeneratorProvider, ProviderModelMixin):
                     cls._update_request_args(session)
                     await raise_for_status(response)
                     requirements = await response.json()
-                    need_arkose = requirements.get("arkose", {}).get("required")
+                    text_data = json.loads(requirements.get("text", "{}")) 
+                    need_arkose = text_data.get("turnstile", {}).get("required", False)
+                    if need_arkose:
+                        arkose_token = text_data.get("turnstile", {}).get("dx")
+                    else:
+                        need_arkose = requirements.get("arkose", {}).get("required", False) 
                     chat_token = requirements["token"]        
 
                 if need_arkose and arkose_token is None:

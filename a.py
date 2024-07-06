@@ -12,18 +12,17 @@ g4f.debug.logging = True  # Enable debug logging
 cookies_dir = os.path.join(os.path.dirname(__file__), "har")
 
 client = Client(
-        provider=Bing,
-        #api_key="AIzaSyA_WGA0iKHarVC_XOEE_GkH4SPPypqWYsg"
-        api_key=read_cookie_files(cookies_dir),
+        provider=GeminiPro,
+        api_key="AIzaSyA_WGA0iKHarVC_XOEE_GkH4SPPypqWYsg"
+       # api_key=read_cookie_files(cookies_dir),
               )
 response =  client.chat.completions.create(
-    model="Copilot",
-    messages=[{"role": "user", "content": "こんにちはあなたの名前は？"}],
+    model="default",
+    messages=[{"role": "user", "content": "Hello your speaking English?"}],
   #  stream=True,
 )
 
 print(response.choices[0].message.content)
-
 ##for chunk in response:
   #  if chunk.choices[0].delta.content:
 #        print(chunk.choices[0].delta.content, flush=True, end="")
