@@ -1304,12 +1304,25 @@ const temporaryDiv = document.createElement('div');
     var dotsInterval;
     var isRequesting = false; 
     var currentFetchController = null; 
+    var isStreaming = false; // ストリーミング中かどうかを示すフラグ
     let lastMessageIsUser = false; // 初期化
 
- function askQuestion() {
+
+function askQuestion() {
   if (isRequesting) {
     return;
   }
+
+  if (isStreaming) {
+    if (currentFetchController) {
+      currentFetchController.abort();
+      currentFetchController = null; 
+    }
+    isStreaming = false; 
+    resetButtonState();
+    return;
+  }
+
   isRequesting = true;
   button.disabled = true;
   button.classList.add('loading');
@@ -1328,7 +1341,6 @@ const temporaryDiv = document.createElement('div');
   lastMessageIsUser = true;
   document.querySelector('.chat-messages').scrollTop = document.querySelector('.chat-messages').scrollHeight;
 
-  // 会話履歴を準備
   let conversationHistory = '';
   if (includeConversationHistory) {
     const chatMessages = document.querySelectorAll('.chat-messages .chat-message');
@@ -1346,7 +1358,6 @@ const temporaryDiv = document.createElement('div');
   }
 
   if (provider === 'dell3') {
-    // 画像生成の場合
     fetch('/generate_image?prompt=' + encodeURIComponent(text))
       .then(response => response.json())
       .then(data => {
@@ -1366,10 +1377,9 @@ const temporaryDiv = document.createElement('div');
         handleError();
       });
 
-  } else if (provider.startsWith("!")) {
+  } else if (provider.startsWith("!")) { 
     provider = provider.substring(1);
 
-    // ストリーミングリクエストの場合
     let promptToSend = conversationHistory;
 
     if (!lastMessageIsUser) {
@@ -1379,12 +1389,17 @@ const temporaryDiv = document.createElement('div');
       }
     }
 
-    // 会話履歴を含める場合のみ、それをプロンプトに追加
     if (includeConversationHistory) {
       promptToSend = conversationHistory + "\n---\n" + promptToSend;
     } else {
       promptToSend = text;
     }
+
+    currentFetchController = new AbortController();
+    const signal = currentFetchController.signal;
+
+    isStreaming = true; 
+    button.innerText = '停止'; 
 
     fetch('/stream', {
       method: 'POST',
@@ -1396,13 +1411,15 @@ const temporaryDiv = document.createElement('div');
         'provider': provider,
         'system': systems,
         'token': token
-      })
+      }),
+      signal: signal 
     })
       .then(response => {
         const reader = response.body.getReader();
         const decoder = new TextDecoder('utf-8');
         lastMessageIsUser = false;
         let messageContentElement = null;
+        let messageElement = null; 
 
         const processChunk = ({ value, done }) => {
           if (done) {
@@ -1427,9 +1444,7 @@ const temporaryDiv = document.createElement('div');
                 .replace(/</g, '<')
                 .replace(/>/g, '>');
 
-              // メッセージ要素の取得または作成
               if (!messageContentElement || messageElement.querySelector('.message-name').textContent !== provider) {
-                // 新しいメッセージ要素を作成
                 messageElement = document.createElement('div');
                 messageElement.classList.add('chat-message');
 
@@ -1445,35 +1460,35 @@ const temporaryDiv = document.createElement('div');
                 document.querySelector('.chat-messages').appendChild(messageElement);
               }
 
-              // マークダウンをHTMLに変換し、メッセージ内容に追加
               const html = convertHtmlAndMarkdown(formattedMessage,false);
               messageContentElement.innerHTML += html;
             }
           });
 
-          // スクロールを最新の状態に保つ
           document.querySelector('.chat-messages').scrollTop = document.querySelector('.chat-messages').scrollHeight;
 
-          // 次のチャンクを読み込む
           reader.read().then(processChunk);
         };
 
-        // 最初のチャンクを読み込む
         reader.read().then(processChunk);
       })
       .catch(error => {
-        console.error('Error:', error);
-        handleError();
+        if (signal.aborted) {
+          console.log("Fetch aborted");
+        } else {
+          console.error('Error:', error);
+          handleError();
+        }
+        isStreaming = false; 
       });
   } else {
-    // 通常のリクエストの場合
     fetch('/ask', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        'text': conversationHistory + text, // 会話履歴全体を送信
+        'text': conversationHistory + text,
         'provider': provider,
         'system': systems,
         'token': token
@@ -1492,12 +1507,11 @@ const temporaryDiv = document.createElement('div');
   }
 }
 
-
 function resetButtonState() {
   clearInterval(dotsInterval);
   button.disabled = false;
   button.classList.remove('loading');
-  button.innerText = '送信';
+  button.innerText = '送信'; 
   isRequesting = false;
 }
 
