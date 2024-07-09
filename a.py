@@ -8,16 +8,17 @@ from g4f.Provider import HuggingChat,OpenRouter,Blackbox,You,Gemini,Bing,Liaobot
 import uuid
 
 g4f.debug.logging = True  # Enable debug logging
+g4f.debug.version_check = True  # Disable automatic version checking
 
 cookies_dir = os.path.join(os.path.dirname(__file__), "har")
 
 client = Client(
-        provider=GeminiPro,
-        api_key="AIzaSyA_WGA0iKHarVC_XOEE_GkH4SPPypqWYsg"
-       # api_key=read_cookie_files(cookies_dir),
+        provider=OpenaiChat,
+        #api_key="AIzaSyA_WGA0iKHarVC_XOEE_GkH4SPPypqWYsg"
+        api_key=read_cookie_files(cookies_dir),
               )
 response =  client.chat.completions.create(
-    model="default",
+    model="auto",
     messages=[{"role": "user", "content": "Hello your speaking English?"}],
   #  stream=True,
 )

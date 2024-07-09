@@ -38,8 +38,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.3.2/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/rasterizehtml/1.3.0/rasterizeHTML.allinone.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js"></script>
+  
 
   <style>
     /* 全体 */
@@ -258,6 +258,7 @@
       padding: 10px;
       border-radius: 5px;
       max-width: 70%;
+      white-space: pre-wrap;
       display: inline-block; 
     }
 
@@ -513,6 +514,7 @@
   </style>
 </head>
 <body>
+  
   <div id="splash-screen">
     <img id="splash-image" alt="起動画像">
   </div>
@@ -703,7 +705,6 @@
     </div>
   </div>
 
-
 <script>  
      function deleteAllCookies() {
       document.cookie.split(";").forEach(cookie => {
@@ -792,6 +793,7 @@ let includeConversationHistory = false; // 会話履歴を含めるかの設定 
       // 会話履歴を含めるかどうかの設定を読み込み
       includeConversationHistory = settings.includeConversationHistory ?? true;
       document.getElementById('includeConversationHistory').checked = includeConversationHistory;
+      
 
       if (settings.showSystemPrompt) {
         document.getElementById('system-prompt-input').style.display = 'block';
@@ -947,7 +949,8 @@ let includeConversationHistory = false; // 会話履歴を含めるかの設定 
     inlineCode: [/`(.*?)`/gi, '<code>$1</code>'],
     blockCode: [/```([\s\S]*?)```/gi, '<pre><code>$1</code></pre>'],
     image: [/!\[(.*?)\]\((.*?)\)/gi, '<img src="$2" alt="$1" style="width: 300px">'],  // imgタグの変換ルールを追加
-    strikethrough: [/~~(.*?)~~/gi, '<del>$1</del>']
+    strikethrough: [/~~(.*?)~~/gi, '<del>$1</del>'],
+    lineBreak: [/  \n/gi, '<br>'] // Markdownの改行をHTMLの改行に変換
   };
 
   // 変換処理
@@ -1298,27 +1301,25 @@ const temporaryDiv = document.createElement('div');
   var token = document.getElementById('APItoken').value;
   document.getElementById('question').value = '';
   addMessageToChat(text, true);
-  lastMessageIsUser = true; // ユーザーからのメッセージを追加した後で更新
+  lastMessageIsUser = true;
   document.querySelector('.chat-messages').scrollTop = document.querySelector('.chat-messages').scrollHeight;
 
- // 会話履歴を準備
-let conversationHistory = '';
-if (includeConversationHistory) {
-  const chatMessages = document.querySelectorAll('.chat-messages .chat-message');
-  let previousMessage = null; // 一つ前のメッセージを保持
+  // 会話履歴を準備
+  let conversationHistory = '';
+  if (includeConversationHistory) {
+    const chatMessages = document.querySelectorAll('.chat-messages .chat-message');
+    let previousMessage = null;
 
-  chatMessages.forEach(message => {
-    const messageContent = message.querySelector('.message-content').textContent;
-    const currentMessage = `${messageContent}\n`;
+    chatMessages.forEach(message => {
+      const messageContent = message.querySelector('.message-content').textContent;
+      const currentMessage = `${messageContent}\n`;
 
-    // 現在のメッセージが一つ前のメッセージと異なる場合のみ追加
-    if (currentMessage !== previousMessage) {
-      conversationHistory += currentMessage;
-      previousMessage = currentMessage; // 一つ前のメッセージを更新
-    }
-  });
-}
-
+      if (currentMessage !== previousMessage) {
+        conversationHistory += currentMessage;
+        previousMessage = currentMessage;
+      }
+    });
+  }
 
   if (provider === 'dell3') {
     // 画像生成の場合
@@ -1347,20 +1348,19 @@ if (includeConversationHistory) {
     // ストリーミングリクエストの場合
     let promptToSend = conversationHistory;
 
-    // 最後のメッセージがユーザーのものでない場合のみ、ユーザー名とメッセージを追加
     if (!lastMessageIsUser) {
-  const newUserMessage = `${text}`;
-  if (!promptToSend.endsWith(newUserMessage)) {
-    promptToSend += newUserMessage;
-  }
-}
-// 会話履歴を含める場合のみ、それをプロンプトに追加
-if (includeConversationHistory) {
-  promptToSend = conversationHistory + "\n---\n" + promptToSend;
-} else {
-  promptToSend = text; // 会話履歴を含めない場合は、ユーザーの入力テキストだけをプロンプトに使用
-}
+      const newUserMessage = `${text}`;
+      if (!promptToSend.endsWith(newUserMessage)) {
+        promptToSend += newUserMessage;
+      }
+    }
 
+    // 会話履歴を含める場合のみ、それをプロンプトに追加
+    if (includeConversationHistory) {
+      promptToSend = conversationHistory + "\n---\n" + promptToSend;
+    } else {
+      promptToSend = text;
+    }
 
     fetch('/stream', {
       method: 'POST',
@@ -1374,117 +1374,93 @@ if (includeConversationHistory) {
         'token': token
       })
     })
-    .then(response => {
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder('utf-8');
-      lastMessageIsUser = false; // AIからのメッセージを追加した後で更新
+      .then(response => {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+        lastMessageIsUser = false;
+        let messageContentElement = null;
 
-      const appendStreamingMessage = (chunk) => {
-  let messageElement = document.querySelector('.chat-messages .chat-message:last-child');
-
-  if (messageElement === null || messageElement.querySelector('.message-name').textContent !== provider) {
-    // 新しいメッセージ要素を作成
-    messageElement = document.createElement('div');
-    messageElement.classList.add('chat-message');
-
-    // メッセージ名要素を作成
-    const messageNameElement = document.createElement('div');
-    messageNameElement.classList.add('message-name');
-    messageNameElement.textContent = provider;
-    messageElement.appendChild(messageNameElement);
-
-    // メッセージ内容要素を作成
-    messageContentElement = document.createElement('div');
-    messageContentElement.classList.add('message-content');
-    messageElement.appendChild(messageContentElement);
-
-    // チャットメッセージに追加
-    document.querySelector('.chat-messages').appendChild(messageElement);
-  }
-
-  const lines = chunk.split('\n');
-  lines.forEach(line => {
-    if (line.startsWith("data: ")) {
-      const message = line.replace(/^data:\s*/gm, '');
-      const parsedMessage = JSON.parse(message);
-      const formattedMessage = parsedMessage.response
-        .replace(/&/g, '&')
-        .replace(/</g, '<')
-        .replace(/>/g, '>');
-
-      // マークダウンをHTMLに変換
-      const html = markdownToHtml(formattedMessage);
-
-      if (formattedMessage === '') {
-        messageContentElement.innerHTML += '<br>';
-      } else {
-        messageContentElement.innerHTML += html;
-      }
-    }
-  });
-};
-
-
-      const processStream = async () => {
-        let streamedMessage = '';
-        while (true) {
-          const { done, value } = await reader.read();
-
+        const processChunk = ({ value, done }) => {
           if (done) {
-            // ストリーミング完了時の処理
-            const messageKey = `message-${Date.now()}`;
-            const messageContentElement = document.querySelector('.chat-messages .chat-message:last-child .message-content');
-         //   const markdownContent = convertHtmlAndMarkdown(messageContentElement.innerHTML, true);
-         //   messageContentElement.innerHTML = markdownToHtml(markdownContent);
+            console.log('Stream complete');
+            const messageContent = messageContentElement.innerHTML; 
+            const converter = new showdown.Converter();
+            messageContentElement.innerHTML = converter.makeHtml(messageContent); 
+
             saveCurrentConversation();
-            break;
+            resetButtonState();
+            return;
           }
 
-          const chunk = decoder.decode(value);
-          appendStreamingMessage(chunk);
-        }
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n');
 
-        resetButtonState();
-        saveCurrentConversation();
-      };
+          lines.forEach(line => {
+            if (line.startsWith("data: ")) {
+              const message = line.replace(/^data:\s*/gm, '');
+              const parsedMessage = JSON.parse(message);
+              const formattedMessage = parsedMessage.response
+                .replace(/&/g, '&')
+                .replace(/</g, '<')
+                .replace(/>/g, '>');
 
-      processStream();
-      lastMessageIsUser = false;
-    })
-    .catch(error => {
-      console.error('Error:', error);
-      handleError();
-    });
+              // メッセージ要素の取得または作成
+              if (!messageContentElement || messageElement.querySelector('.message-name').textContent !== provider) {
+                // 新しいメッセージ要素を作成
+                messageElement = document.createElement('div');
+                messageElement.classList.add('chat-message');
 
+                const messageNameElement = document.createElement('div');
+                messageNameElement.classList.add('message-name');
+                messageNameElement.textContent = provider;
+                messageElement.appendChild(messageNameElement);
+
+                messageContentElement = document.createElement('div');
+                messageContentElement.classList.add('message-content');
+                messageElement.appendChild(messageContentElement);
+
+                document.querySelector('.chat-messages').appendChild(messageElement);
+              }
+
+              // マークダウンをHTMLに変換し、メッセージ内容に追加
+              const html = convertHtmlAndMarkdown(formattedMessage,false);
+              messageContentElement.innerHTML += html;
+            }
+          });
+
+          // スクロールを最新の状態に保つ
+          document.querySelector('.chat-messages').scrollTop = document.querySelector('.chat-messages').scrollHeight;
+
+          // 次のチャンクを読み込む
+          reader.read().then(processChunk);
+        };
+
+        // 最初のチャンクを読み込む
+        reader.read().then(processChunk);
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        handleError();
+      });
   } else {
-    // 通常のGETリクエストの場合
-    let promptToSend = conversationHistory;
-
-    // ユーザー名とメッセージを追加 (メタ情報なし)
-    if (!lastMessageIsUser) {
-  const newUserMessage = `${text}`;
-  if (!promptToSend.endsWith(newUserMessage)) {
-    promptToSend += newUserMessage;
-  }
-}
-// 会話履歴を含める場合のみ、それをプロンプトに追加
-if (includeConversationHistory) {
-  promptToSend = conversationHistory + "\n---\n" + promptToSend;
-} else {
-  promptToSend = text; // 会話履歴を含めない場合は、ユーザーの入力テキストだけをプロンプトに使用
-}
-
-
-    fetch(`/chat?provider=${provider}&prompt=${encodeURIComponent(promptToSend)}&system=${encodeURIComponent(systems)}&token=${encodeURIComponent(token)}`)
+    // 通常のリクエストの場合
+    fetch('/ask', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        'text': conversationHistory + text, // 会話履歴全体を送信
+        'provider': provider,
+        'system': systems,
+        'token': token
+      })
+    })
       .then(response => response.json())
       .then(data => {
-        const decodedData = typeof data === 'object' && data.hasOwnProperty('response') ? unicodeToUtf8(data.response) : unicodeToUtf8(data);
-        addMessageToChat(decodedData, false, false, provider);
-        document.querySelector('.chat-messages').scrollTop = document.querySelector('.chat-messages').scrollHeight;
+        addMessageToChat(data.response, false, true, provider);
         saveCurrentConversation();
         resetButtonState();
-
-        lastMessageIsUser = false;
       })
       .catch(error => {
         console.error('Error:', error);
@@ -1493,21 +1469,21 @@ if (includeConversationHistory) {
   }
 }
 
-    function resetButtonState() {
-      clearInterval(dotsInterval);
-      button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-star-fill" viewBox="0 0 16 16"><path d="M3.612 15.443c-.386.193-.824-.149-.742-.592l.83-4.73L.173 6.765c-.33-.33-.03-.86.52-.86h12.693c.55 0 .85.53.52.86l-3.057 3.057L13.067 14.852c.392.392.117.986-.237.986H3.85c-.354 0-.628-.595-.237-.986z"/></svg> Run';
-      button.classList.remove('loading'); 
-      isRequesting = false; 
-      button.disabled = false; 
-    }
 
-    function stopRequest() {
-      console.log("AIリクエストを停止します。");
-      currentFetchController?.abort();
-      currentFetchController = null;
-      resetButtonState();
-      button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-star-fill" viewBox="0 0 16 16"><path d="M3.612 15.443c-.386.193-.824-.149-.742-.592l.83-4.73L.173 6.765c-.33-.33-.03-.86.52-.86h12.693c.55 0 .85.53.52.86l-3.057 3.057L13.067 14.852c.392.392.117.986-.237.986H3.85c-.354 0-.628-.595-.237-.986z"/></svg> Run';
-    }
+function resetButtonState() {
+  clearInterval(dotsInterval);
+  button.disabled = false;
+  button.classList.remove('loading');
+  button.innerText = '送信';
+  isRequesting = false;
+}
+
+function handleError() {
+  resetButtonState();
+  alert("エラーが発生しました。しばらくしてからもう一度お試しください。");
+}
+
+   
 
     function unicodeToUtf8(unicode) {
       return typeof unicode === 'string' 
