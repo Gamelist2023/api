@@ -511,6 +511,10 @@
   width: 100%;
   height: auto;
 }
+
+.message-content {
+    white-space: pre-wrap;
+}
   </style>
 </head>
 <body>
@@ -525,7 +529,7 @@
       <div class="setting-options">
         <div class="setting-option">
           <p>お知らせ</p>
-          <p>6/24の更新によりBAN基準及び一日のリクエストを300に制限しましたトークン有りの場合は1000です</p>
+          <p>7/09の更新でAIのストリーミング処理に関する修正を行いました</p>
           <label for="provider">AI Provider:</label>
           <select id="provider">
             <optgroup label="通常(システムプロンプト非対応):">
@@ -916,49 +920,61 @@ let includeConversationHistory = false; // 会話履歴を含めるかの設定 
 }
 
   function convertHtmlAndMarkdown(text, toMarkdown) {
-  // 正規表現の定義
-  const htmlToMarkdownRules = {
-    heading: [/<h1>(.*?)<\/h1>/gi, '# $1\n'],
-    subHeading: [/<h2>(.*?)<\/h2>/gi, '## $1\n'],
-    bold: [/<strong>(.*?)<\/strong>/gi, '**$1**'],
-    italic: [/<em>(.*?)<\/em>/gi, '*$1*'],
-    link: [/<a href="(.*?)">(.*?)<\/a>/gi, '[$2'],
-    unorderedList: [/<ul>(.*?)<\/ul>/gsi, (match, listContent) => {
-      return listContent.replace(/<li>(.*?)<\/li>/gsi, '- $1\n');
+  const htmlToMarkdownRules = [
+    // ブロック要素を先に処理
+    [/<pre><code>([\s\S]*?)<\/code><\/pre>/gi, '```\n$1\n```'], // コードブロック
+    [/<h1>\s*(.*?)\s*<\/h1>/gi, '# $1\n\n'],  // 見出し (##以降も同様)
+    [/<h2>\s*(.*?)\s*<\/h2>/gi, '## $1\n\n'],
+    [/<h3>\s*(.*?)\s*<\/h3>/gi, '### $1\n\n'],
+    [/<h4>\s*(.*?)\s*<\/h4>/gi, '#### $1\n\n'],
+    [/<h5>\s*(.*?)\s*<\/h5>/gi, '##### $1\n\n'],
+    [/<h6>\s*(.*?)\s*<\/h6>/gi, '###### $1\n\n'],
+    [/<ul>([\s\S]*?)<\/ul>/gsi, (match, listContent) => {
+      return listContent.replace(/<li>([\s\S]*?)<\/li>/gsi, '- $1\n');
     }],
-    orderedList: [/<ol>(.*?)<\/ol>/gsi, (match, listContent) => {
+    [/<ol>([\s\S]*?)<\/ol>/gsi, (match, listContent) => {
       let i = 1;
-      return listContent.replace(/<li>(.*?)<\/li>/gsi, () => `${i++}. $1\n`);
+      return listContent.replace(/<li>([\s\S]*?)<\/li>/gsi, () => `${i++}. $1\n`);
     }],
-    inlineCode: [/<code>(.*?)<\/code>/gi, '`$1`'],
-    blockCode: [/<pre><code>([\s\S]*?)<\/code><\/pre>/gi, '```$1```'],
-    image: [/\<img src\=\"(.*?)\" alt\=\"(.*?)\" style\=\"width\: (.*?)px\"\>/gi, '![$2]($1)'],
-    strikethrough: [/<del>(.*?)<\/del>/gi, '~~$1~~'],
-    lineBreak: [/<br>/gi, '\n'],
-    newLine: [/\n/gi, '  \n'], // HTMLの改行をMarkdownの改行に変換
-  };
+    [/<p>([\s\S]*?)<\/p>/gi, '$1\n\n'], // 段落
+    [/<blockquote>([\s\S]*?)<\/blockquote>/gi, '> $1\n\n'], // 引用
 
-  const markdownToHtmlRules = {
-    heading: [/# (.*?)\n/gi, '<h1>$1</h1>'],
-    subHeading: [/## (.*?)\n/gi, '<h2>$1</h2>'],
-    bold: [/\*\*(.*?)\*\*/gi, '<strong>$1</strong>'],
-    italic: [/\*(.*?)\*/gi, '<em>$1</em>'],
-    link: [/\[(.*?)\]\((.*?)\)/gi, '<a href="$2">$1</a>'],
-    unorderedList: [/- (.*?)\n/gsi, '<ul><li>$1</li></ul>'],
-    orderedList: [/\d+\. (.*?)\n/gsi, '<ol><li>$1</li></ol>'],
-    inlineCode: [/`(.*?)`/gi, '<code>$1</code>'],
-    blockCode: [/```([\s\S]*?)```/gi, '<pre><code>$1</code></pre>'],
-    image: [/!\[(.*?)\]\((.*?)\)/gi, '<img src="$2" alt="$1" style="width: 300px">'],  // imgタグの変換ルールを追加
-    strikethrough: [/~~(.*?)~~/gi, '<del>$1</del>'],
-    lineBreak: [/  \n/gi, '<br>'] // Markdownの改行をHTMLの改行に変換
-  };
+    // インライン要素
+    [/<strong>(.*?)<\/strong>/gi, '**$1**'],
+    [/<em>(.*?)<\/em>/gi, '*$1*'],
+    [/<a href="(.*?)">(.*?)<\/a>/gi, '[$2'],
+    [/<code>(.*?)<\/code>/gi, '`$1`'], 
+    [/\<img src\=\"(.*?)\" alt\=\"(.*?)\" style\=\"width\: (.*?)px\"\>/gi, '![$2'],
+    [/<del>(.*?)<\/del>/gi, '~~$1~~'],
+    [/<br>/gi, '\n'],
+  ];
 
-  // 変換処理
+  const markdownToHtmlRules = [
+    [/```\n([\s\S]*?)\n```/gi, '<pre><code>$1</code></pre>'],
+    [/#\s+(.*?)\n\n/gi, '<h1>$1</h1>'],  // 見出し (##以降も同様)
+    [/##\s+(.*?)\n\n/gi, '<h2>$1</h2>'], 
+    [/###\s+(.*?)\n\n/gi, '<h3>$1</h3>'], 
+    [/####\s+(.*?)\n\n/gi, '<h4>$1</h4>'], 
+    [/#####\s+(.*?)\n\n/gi, '<h5>$1</h5>'], 
+    [/######\s+(.*?)\n\n/gi, '<h6>$1</h6>'],
+    [/- (.*?)\n/gsi, '<ul><li>$1</li></ul>'],
+    [/\d+\. (.*?)\n/gsi, '<ol><li>$1</li></ol>'], 
+    [/\*\*(.*?)\*\*/gi, '<strong>$1</strong>'],
+    [/\*(.*?)\*/gi, '<em>$1</em>'],
+    [/\[(.*?)\]\((.*?)\)/gi, '<a href="$2">$1</a>'],
+    [/`(.*?)`/gi, '<code>$1</code>'], 
+    [/!\[(.*?)\]\((.*?)\)/gi, '<img src="$2" alt="$1" style="width: 300px">'],
+    [/~~(.*?)~~/gi, '<del>$1</del>'],
+    [/  \n/gi, '<br>'],
+    [/> (.*?)\n\n/gi, '<blockquote>$1</blockquote>'], // 引用
+    [/`{3}([\s\S]*?)`{3}/g, '<pre>$1</pre>'],
+  ];
+  
   const rules = toMarkdown ? htmlToMarkdownRules : markdownToHtmlRules;
   let convertedText = text;
 
-  for (const rule in rules) {
-    convertedText = convertedText.replace(rules[rule][0], rules[rule][1]);
+  for (const rule of rules) { 
+    convertedText = convertedText.replace(rule[0], rule[1]);
   }
 
   return convertedText;
@@ -967,11 +983,19 @@ let includeConversationHistory = false; // 会話履歴を含めるかの設定 
 //ライブラリ版
 function markdownToHtml(markdown) {
   // showdownのオプションを設定
-  showdown.setOption('simpleLineBreaks', true);
   showdown.setOption('noHeaderId', true); // 見出しタグにIDを付与しないように設定
+  showdown.setOption('tables', true); // テーブル構文を有効にする
+  showdown.setOption('tasklists', true); // タスクリストを有効にする
+  showdown.setOption('smoothLivePreview', true); // ライブプレビューをスムーズにする
+  showdown.setOption('strikethrough', true); // 打ち消し線構文を有効にする
+  showdown.setOption('emoji', true); // 絵文字のサポートを有効にする
+  showdown.setOption('underline', true); // 下線のサポートを有効にする
+
   var converter = new showdown.Converter();
   return converter.makeHtml(markdown);
 }
+
+
 
 
 
@@ -1384,8 +1408,7 @@ const temporaryDiv = document.createElement('div');
           if (done) {
             console.log('Stream complete');
             const messageContent = messageContentElement.innerHTML; 
-            const converter = new showdown.Converter();
-            messageContentElement.innerHTML = converter.makeHtml(messageContent); 
+            messageContentElement.innerHTML = markdownToHtml(messageContent,false); 
 
             saveCurrentConversation();
             resetButtonState();
