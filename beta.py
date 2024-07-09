@@ -412,11 +412,11 @@ async def bing(user_id: str, prompt: str,):
         
     try:
         client = AsyncClient(
-            provider=g4f.Provider.Bing,
+            provider=g4f.Provider.Blackbox,
             api_key=read_cookie_files(cookies_dir),
         )
         response = await client.chat.completions.create(
-                model="Copilot",
+                model="default",
                 messages=[{"role": "user", "content": prompt}],
             )
         return response.choices[0].message.content
