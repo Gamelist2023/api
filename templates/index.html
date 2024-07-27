@@ -1488,7 +1488,7 @@ function askQuestion() {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        'text': conversationHistory + text,
+        'prompt': conversationHistory + text,
         'provider': provider,
         'system': systems,
         'token': token
