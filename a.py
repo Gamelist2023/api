@@ -19,7 +19,7 @@ client = Client(
               )
 response =  client.chat.completions.create(
     model="auto",
-    messages=[{"role": "user", "content": "Hello your speaking English?"}],
+    messages=[{"role": "user", "content": "hello"}],
   #  stream=True,
 )
 

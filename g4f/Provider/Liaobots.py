@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import uuid
-import logging
 
 from aiohttp import ClientSession, BaseConnector
 
@@ -10,9 +9,16 @@ from .base_provider import AsyncGeneratorProvider, ProviderModelMixin
 from .helper import get_connector
 from ..requests import raise_for_status
 
-logging.basicConfig(level=logging.INFO)
-
 models = {
+    "gpt-3.5-turbo": {
+        "id": "gpt-3.5-turbo",
+        "name": "GPT-3.5-Turbo",
+        "model": "ChatGPT",
+        "provider": "OpenAI",
+        "maxLength": 48000,
+        "tokenLimit": 14000,
+        "context": "16K",
+    },
     "gpt-4o-free": {
         "context": "8K",
         "id": "gpt-4o-free",
@@ -21,6 +27,15 @@ models = {
         "name": "GPT-4o-free",
         "provider": "OpenAI",
         "tokenLimit": 7800,
+    },
+    "gpt-4-turbo-2024-04-09": {
+        "id": "gpt-4-turbo-2024-04-09",
+        "name": "GPT-4-Turbo",
+        "model": "ChatGPT",
+        "provider": "OpenAI",
+        "maxLength": 260000,
+        "tokenLimit": 126000,
+        "context": "128K",
     },
     "gpt-4o": {
         "context": "128K",
@@ -31,51 +46,56 @@ models = {
         "provider": "OpenAI",
         "tokenLimit": 62000,
     },
-    "gpt-3.5-turbo": {
-        "id": "gpt-3.5-turbo",
-        "name": "GPT-3.5-Turbo",
-        "maxLength": 48000,
-        "tokenLimit": 14000,
-        "context": "16K",
-    },
-    "gpt-4-turbo": {
-        "id": "gpt-4-turbo-preview",
-        "name": "GPT-4-Turbo",
-        "maxLength": 260000,
-        "tokenLimit": 126000,
-        "context": "128K",
-    },
-    "gpt-4": {
-        "id": "gpt-4-plus",
-        "name": "GPT-4-Plus",
-        "maxLength": 130000,
-        "tokenLimit": 31000,
-        "context": "32K",
-    },
     "gpt-4-0613": {
         "id": "gpt-4-0613",
         "name": "GPT-4-0613",
-        "maxLength": 60000,
-        "tokenLimit": 15000,
-        "context": "16K",
-    },
-    "gemini-pro": {
-        "id": "gemini-pro",
-        "name": "Gemini-Pro",
-        "maxLength": 120000,
-        "tokenLimit": 30000,
-        "context": "32K",
+        "model": "ChatGPT",
+        "provider": "OpenAI",
+        "maxLength": 32000,
+        "tokenLimit": 7600,
+        "context": "8K",
     },
     "claude-3-opus-20240229": {
         "id": "claude-3-opus-20240229",
         "name": "Claude-3-Opus",
+        "model": "Claude",
+        "provider": "Anthropic",
         "maxLength": 800000,
         "tokenLimit": 200000,
         "context": "200K",
     },
+    "claude-3-opus-20240229-aws": {
+        "id": "claude-3-opus-20240229-aws",
+        "name": "Claude-3-Opus-Aws",
+        "model": "Claude",
+        "provider": "Anthropic",
+        "maxLength": 800000,
+        "tokenLimit": 200000,
+        "context": "200K",
+    },
+    "claude-3-opus-100k-poe": {
+        "id": "claude-3-opus-100k-poe",
+        "name": "Claude-3-Opus-100k-Poe",
+        "model": "Claude",
+        "provider": "Anthropic",
+        "maxLength": 400000,
+        "tokenLimit": 99000,
+        "context": "100K",
+    },
     "claude-3-sonnet-20240229": {
         "id": "claude-3-sonnet-20240229",
         "name": "Claude-3-Sonnet",
+        "model": "Claude",
+        "provider": "Anthropic",
+        "maxLength": 800000,
+        "tokenLimit": 200000,
+        "context": "200K",
+    },
+    "claude-3-haiku-20240307": {
+        "id": "claude-3-haiku-20240307",
+        "name": "Claude-3-Haiku",
+        "model": "Claude",
+        "provider": "Anthropic",
         "maxLength": 800000,
         "tokenLimit": 200000,
         "context": "200K",
@@ -83,6 +103,8 @@ models = {
     "claude-2.1": {
         "id": "claude-2.1",
         "name": "Claude-2.1-200k",
+        "model": "Claude",
+        "provider": "Anthropic",
         "maxLength": 800000,
         "tokenLimit": 200000,
         "context": "200K",
@@ -90,20 +112,35 @@ models = {
     "claude-2.0": {
         "id": "claude-2.0",
         "name": "Claude-2.0-100k",
+        "model": "Claude",
+        "provider": "Anthropic",
         "maxLength": 400000,
         "tokenLimit": 100000,
         "context": "100K",
     },
-    "claude-instant-1": {
-        "id": "claude-instant-1",
-        "name": "Claude-instant-1",
-        "maxLength": 400000,
-        "tokenLimit": 100000,
-        "context": "100K",
+    "gemini-1.0-pro-latest": {
+        "id": "gemini-1.0-pro-latest",
+        "name": "Gemini-Pro",
+        "model": "Gemini",
+        "provider": "Google",
+        "maxLength": 120000,
+        "tokenLimit": 30000,
+        "context": "32K",
+    },
+    "gemini-1.5-flash-latest": {
+        "id": "gemini-1.5-flash-latest",
+        "name": "Gemini-1.5-Flash-1M",
+        "model": "Gemini",
+        "provider": "Google",
+        "maxLength": 4000000,
+        "tokenLimit": 1000000,
+        "context": "1024K",
     },
     "gemini-1.5-pro-latest": {
         "id": "gemini-1.5-pro-latest",
         "name": "Gemini-1.5-Pro-1M",
+        "model": "Gemini",
+        "provider": "Google",
         "maxLength": 4000000,
         "tokenLimit": 1000000,
         "context": "1024K",
@@ -119,9 +156,9 @@ class Liaobots(AsyncGeneratorProvider, ProviderModelMixin):
     supports_gpt_35_turbo = True
     supports_gpt_4 = True
     default_model = "gpt-3.5-turbo"
-    models = list(models)
+    models = list(models.keys())
     model_aliases = {
-        "claude-v2": "claude-2"
+        "claude-v2": "claude-2.0"
     }
     _auth_code = ""
     _cookie_jar = None
@@ -133,7 +170,6 @@ class Liaobots(AsyncGeneratorProvider, ProviderModelMixin):
         messages: Messages,
         auth: str = None,
         proxy: str = None,
-        systemPrompt: str = "You are a competent AI assistant",
         connector: BaseConnector = None,
         **kwargs
     ) -> AsyncResult:
@@ -151,16 +187,15 @@ class Liaobots(AsyncGeneratorProvider, ProviderModelMixin):
         ) as session:
             data = {
                 "conversationId": str(uuid.uuid4()),
-                "model": models[cls.get_model(model)],
+                "model": models[model],
                 "messages": messages,
                 "key": "",
-                "prompt": kwargs.get("system_message",f"{systemPrompt}"),
+                "prompt": kwargs.get("system_message", "You are a helpful assistant."),
             }
-            logging.info({systemPrompt})
             if not cls._auth_code:
                 async with session.post(
                     "https://liaobots.work/recaptcha/api/login",
-                    data={"token": "abcdefghijklmnopqrst"},#This one worked without me having to change it.
+                    data={"token": "abcdefghijklmnopqrst"},
                     verify_ssl=False
                 ) as response:
                     await raise_for_status(response)
@@ -190,7 +225,7 @@ class Liaobots(AsyncGeneratorProvider, ProviderModelMixin):
             except:
                 async with session.post(
                     "https://liaobots.work/api/user",
-                    json={"authcode": "pTIQr4FTnVRfr"},#Change authcode ,gain by Lianobots
+                    json={"authcode": "pTIQr4FTnVRfr"},
                     verify_ssl=False
                 ) as response:
                     await raise_for_status(response)
@@ -204,10 +239,51 @@ class Liaobots(AsyncGeneratorProvider, ProviderModelMixin):
                     headers={"x-auth-code": cls._auth_code},
                     verify_ssl=False
                 ) as response:
-                    
                     await raise_for_status(response)
                     async for chunk in response.content.iter_any():
                         if b"<html coupert-item=" in chunk:
                             raise RuntimeError("Invalid session")
                         if chunk:
                             yield chunk.decode(errors="ignore")
+
+    @classmethod
+    def get_model(cls, model: str) -> str:
+        """
+        Retrieve the internal model identifier based on the provided model name or alias.
+        """
+        if model in cls.model_aliases:
+            model = cls.model_aliases[model]
+        if model not in models:
+            raise ValueError(f"Model '{model}' is not supported.")
+        return model
+
+    @classmethod
+    def is_supported(cls, model: str) -> bool:
+        """
+        Check if the given model is supported.
+        """
+        return model in models or model in cls.model_aliases
+
+    @classmethod
+    async def initialize_auth_code(cls, session: ClientSession) -> None:
+        """
+        Initialize the auth code by making the necessary login requests.
+        """
+        async with session.post(
+            "https://liaobots.work/api/user",
+            json={"authcode": "pTIQr4FTnVRfr"},
+            verify_ssl=False
+        ) as response:
+            await raise_for_status(response)
+            cls._auth_code = (await response.json(content_type=None))["authCode"]
+            if not cls._auth_code:
+                raise RuntimeError("Empty auth code")
+            cls._cookie_jar = session.cookie_jar
+
+    @classmethod
+    async def ensure_auth_code(cls, session: ClientSession) -> None:
+        """
+        Ensure the auth code is initialized, and if not, perform the initialization.
+        """
+        if not cls._auth_code:
+            await cls.initialize_auth_code(session)

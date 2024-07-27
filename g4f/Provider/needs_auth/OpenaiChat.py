@@ -5,6 +5,7 @@ import uuid
 import json
 import base64
 import time
+import logging
 from aiohttp import ClientWebSocketResponse
 from copy import copy
 
@@ -33,6 +34,19 @@ from ..helper import format_cookies
 from ..openai.har_file import getArkoseAndAccessToken, NoValidHarFileError
 from ..openai.proofofwork import generate_proof_token
 from ... import debug
+
+# ロガーの設定
+
+logger = logging.getLogger(__name__)
+
+""""
+logger.setLevel(logging.DEBUG)  # または logger.setLevel(logging.INFO) 
+file_handler = logging.FileHandler('OpenaiChat.log')  # ファイル名を変更
+file_handler.setLevel(logging.DEBUG)  # または file_handler.setLevel(logging.INFO) 
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+"""
 
 DEFAULT_HEADERS = {
     "accept": "*/*",
@@ -72,6 +86,10 @@ class OpenaiChat(AsyncGeneratorProvider, ProviderModelMixin):
     _headers: dict = None
     _cookies: Cookies = None
     _expires: int = None
+    dev = True
+    # デフォルトのturnstileソルバーを設定
+
+
 
     @classmethod
     async def create(
@@ -84,7 +102,7 @@ class OpenaiChat(AsyncGeneratorProvider, ProviderModelMixin):
     ) -> Response:
         """
         Create a new conversation or continue an existing one
-        
+
         Args:
             prompt: The user input to start or continue the conversation
             model: The name of the model to use for generating responses
@@ -95,11 +113,11 @@ class OpenaiChat(AsyncGeneratorProvider, ProviderModelMixin):
             parent_id: The ID of the parent message, if any
             image: The image to include in the user input, if any
             **kwargs: Additional keyword arguments to pass to the generator
-        
+
         Returns:
             A Response object that contains the generator, action, messages, and options
         """
-        # Add the user input to the messages list
+        logger.debug("OpenaiChat.create() が呼び出されました。prompt: %s, model: %s, action: %s", prompt, model, action)
         if prompt is not None:
             messages.append({
                 "role": "user",
@@ -137,7 +155,7 @@ class OpenaiChat(AsyncGeneratorProvider, ProviderModelMixin):
         Returns:
             An ImageRequest object that contains the download URL, file name, and other data
         """
-        # Convert the image to a PIL Image object and get the extension
+        logger.debug("OpenaiChat.upload_image() が呼び出されました")
         data_bytes = to_bytes(image)
         image = to_image(data_bytes)
         extension = image.format.lower()
@@ -146,10 +164,11 @@ class OpenaiChat(AsyncGeneratorProvider, ProviderModelMixin):
             "file_size": len(data_bytes),
             "use_case":	"multimodal"
         }
-        # Post the image data to the service and get the image data
+        logger.debug("画像アップロードリクエストを送信します: %s", data)
         async with session.post(f"{cls.url}/backend-api/files", json=data, headers=headers) as response:
             cls._update_request_args(session)
             await raise_for_status(response)
+            logger.debug("画像アップロードリクエストのレスポンス: %s", response.status)
             image_data = {
                 **data,
                 **await response.json(),
@@ -158,7 +177,7 @@ class OpenaiChat(AsyncGeneratorProvider, ProviderModelMixin):
                 "height": image.height,
                 "width": image.width
             }
-        # Put the image bytes to the upload URL and check the status
+        logger.debug("画像データをPUTリクエストで送信します: %s", image_data["upload_url"])
         async with session.put(
             image_data["upload_url"],
             data=data_bytes,
@@ -168,7 +187,8 @@ class OpenaiChat(AsyncGeneratorProvider, ProviderModelMixin):
             }
         ) as response:
             await raise_for_status(response)
-        # Post the file ID to the service and get the download URL
+            logger.debug("画像データPUTリクエストのレスポンス: %s", response.status)
+        logger.debug("ファイルIDをPOSTリクエストで送信します: %s", image_data['file_id'])
         async with session.post(
             f"{cls.url}/backend-api/files/{image_data['file_id']}/uploaded",
             json={},
@@ -176,6 +196,7 @@ class OpenaiChat(AsyncGeneratorProvider, ProviderModelMixin):
         ) as response:
             cls._update_request_args(session)
             await raise_for_status(response)
+            logger.debug("ファイルID POSTリクエストのレスポンス: %s", response.status)
             image_data["download_url"] = (await response.json())["download_url"]
         return ImageRequest(image_data)
 
@@ -191,18 +212,23 @@ class OpenaiChat(AsyncGeneratorProvider, ProviderModelMixin):
         Returns:
             The default model name as a string
         """
+        logger.debug("OpenaiChat.get_default_model() が呼び出されました")
         if not cls.default_model:
             url = f"{cls.url}/backend-anon/models" if cls._api_key is None else f"{cls.url}/backend-api/models"
+            logger.debug("デフォルトモデル取得リクエストを送信します: %s", url)
             async with session.get(url, headers=headers) as response:
                 cls._update_request_args(session)
                 if response.status == 401:
                     raise MissingAuthError('Add a "api_key" or a .har file' if cls._api_key is None else "Invalid api key")
                 await raise_for_status(response)
                 data = await response.json()
+                logger.debug("デフォルトモデル取得リクエストのレスポンス: %s", data)
                 if "categories" in data:
                     cls.default_model = data["categories"][-1]["default_model"]
-                    return cls.default_model 
+                    logger.debug("デフォルトモデル: %s", cls.default_model)
+                    return cls.default_model
                 raise ResponseError(data)
+        logger.debug("デフォルトモデル: %s", cls.default_model)
         return cls.default_model
 
     @classmethod
@@ -217,16 +243,14 @@ class OpenaiChat(AsyncGeneratorProvider, ProviderModelMixin):
         Returns:
             A list of messages with the user input and the image, if any
         """
-        # Create a message object with the user role and the content
+        logger.debug("OpenaiChat.create_messages() が呼び出されました")
         messages = [{
             "id": str(uuid.uuid4()),
             "author": {"role": message["role"]},
             "content": {"content_type": "text", "parts": [message["content"]]},
         } for message in messages]
 
-        # Check if there is an image response
         if image_request is not None:
-            # Change content in last user message
             messages[-1]["content"] = {
                 "content_type": "multimodal_text",
                 "parts": [{
@@ -236,7 +260,6 @@ class OpenaiChat(AsyncGeneratorProvider, ProviderModelMixin):
                     "width": image_request.get("width"),
                 }, messages[-1]["content"]["parts"][0]]
             }
-            # Add the metadata object with the attachments
             messages[-1]["metadata"] = {
                 "attachments": [{
                     "height": image_request.get("height"),
@@ -247,6 +270,7 @@ class OpenaiChat(AsyncGeneratorProvider, ProviderModelMixin):
                     "width": image_request.get("width"),
                 }]
             }
+        logger.debug("作成されたメッセージ: %s", messages)
         return messages
 
     @classmethod
@@ -269,6 +293,7 @@ class OpenaiChat(AsyncGeneratorProvider, ProviderModelMixin):
         Raises:
             RuntimeError: If there'san error in downloading the image, including issues with the HTTP request or response.
         """
+        logger.debug("OpenaiChat.get_generated_image() が呼び出されました")
         if "parts" not in line["message"]["content"]:
             return
         first_part = line["message"]["content"]["parts"][0]
@@ -278,13 +303,16 @@ class OpenaiChat(AsyncGeneratorProvider, ProviderModelMixin):
             return
         prompt = first_part["metadata"]["dalle"]["prompt"]
         file_id = first_part["asset_pointer"].split("file-service://", 1)[1]
+        logger.debug("画像ダウンロードリクエストを送信します: %s", file_id)
         try:
             async with session.get(f"{cls.url}/backend-api/files/{file_id}/download", headers=headers) as response:
                 cls._update_request_args(session)
                 await raise_for_status(response)
+                logger.debug("画像ダウンロードリクエストのレスポンス: %s", response.status)
                 download_url = (await response.json())["download_url"]
                 return ImageResponse(download_url, prompt)
         except Exception as e:
+            logger.exception("画像のダウンロード中にエラーが発生しました: %s", e)
             raise RuntimeError(f"Error in downloading image: {e}")
 
     @classmethod
@@ -303,13 +331,14 @@ class OpenaiChat(AsyncGeneratorProvider, ProviderModelMixin):
         Raises:
             HTTPError: If the HTTP request fails or returns an unsuccessful status code.
         """
+        logger.debug("OpenaiChat.delete_conversation() が呼び出されました。conversation_id: %s", conversation_id)
         async with session.patch(
             f"{cls.url}/backend-api/conversation/{conversation_id}",
             json={"is_visible": False},
             headers=headers
         ) as response:
             cls._update_request_args(session)
-            ...
+            logger.debug("会話削除リクエストのレスポンス: %s", response.status)
 
     @classmethod
     async def create_async_generator(
@@ -357,6 +386,12 @@ class OpenaiChat(AsyncGeneratorProvider, ProviderModelMixin):
         Raises:
             RuntimeError: If an error occurs during processing.
         """
+        logger.debug(
+            "OpenaiChat.create_async_generator() が呼び出されました。model: %s, action: %s, conversation_id: %s",
+            model,
+            action,
+            conversation_id,
+        )
         async with StreamSession(
             proxy=proxy,
             impersonate="chrome",
@@ -364,38 +399,58 @@ class OpenaiChat(AsyncGeneratorProvider, ProviderModelMixin):
         ) as session:
             if cls._expires is not None and cls._expires < time.time():
                 cls._headers = cls._api_key = None
-            arkose_token = None
+            turnstile_token = None
             proofTokens = None
             try:
-                arkose_token, api_key, cookies, headers, proofTokens = await getArkoseAndAccessToken(proxy)
+                logger.debug("harファイルから認証情報を取得します")
+                (
+                    turnstile_token, 
+                    api_key,
+                    cookies,
+                    headers,
+                    proofTokens,
+                    response_token,
+                    pow_result,
+                    har_data,
+                ) = await getArkoseAndAccessToken(proxy)
                 cls._create_request_args(cookies, headers)
                 cls._set_api_key(api_key)
+                logger.debug(
+                    "harファイルから取得した値: turnstile_token: %s, api_key: %s, cookies: %s, headers: %s, proofTokens: %s, response_token: %s, pow_result: %s",
+                    turnstile_token, api_key, cookies, headers, proofTokens, response_token, pow_result
+                )
             except NoValidHarFileError as e:
                 if cls._api_key is None and cls.needs_auth:
                     raise e
+                logger.debug("harファイルが見つからないか、有効ではありません。デフォルトのリクエスト引数を作成します")
                 cls._create_request_args()
 
             if cls.default_model is None:
+                logger.debug("デフォルトモデルが設定されていません。デフォルトモデルを取得します")
                 cls.default_model = cls.get_model(await cls.get_default_model(session, cls._headers))
 
             try:
+                logger.debug("画像が送信されたかどうかを確認します: %s", image is not None)
                 image_request = await cls.upload_image(session, cls._headers, image, image_name) if image else None
             except Exception as e:
                 image_request = None
-                if debug.logging:
-                    print("OpenaiChat: Upload image failed")
-                    print(f"{e.__class__.__name__}: {e}")
+                logger.exception("画像のアップロード中にエラーが発生しました: %s", e)
 
             model = cls.get_model(model)
             model = "text-davinci-002-render-sha" if model == "gpt-3.5-turbo" else model
+            logger.debug("使用モデル: %s", model)
             if conversation is None:
+                logger.debug("conversationがNoneです。新しいConversationオブジェクトを作成します")
                 conversation = Conversation(conversation_id, str(uuid.uuid4()) if parent_id is None else parent_id)
             else:
+                logger.debug("conversationがNoneではありません。既存のConversationオブジェクトをコピーします")
                 conversation = copy(conversation)
             if cls._api_key is None:
+                logger.debug("APIキーが設定されていません。auto_continue を False に設定します")
                 auto_continue = False
             conversation.finish_reason = None
             while conversation.finish_reason is None:
+                logger.debug("チャット要件リクエストを送信します")
                 async with session.post(
                     f"{cls.url}/backend-anon/sentinel/chat-requirements"
                     if cls._api_key is None else
@@ -406,38 +461,30 @@ class OpenaiChat(AsyncGeneratorProvider, ProviderModelMixin):
                     cls._update_request_args(session)
                     await raise_for_status(response)
                     requirements = await response.json()
-                    text_data = json.loads(requirements.get("text", "{}")) 
-                    need_arkose = text_data.get("turnstile", {}).get("required", False)
-                    if need_arkose:
-                        arkose_token = text_data.get("turnstile", {}).get("dx")
-                    else:
-                        need_arkose = requirements.get("arkose", {}).get("required", False) 
-                    chat_token = requirements["token"]        
+                    logger.debug("チャット要件リクエストのレスポンス: %s", requirements)
+                    chat_token = requirements["token"]
 
-                if need_arkose and arkose_token is None:
-                    arkose_token, api_key, cookies, headers, proofTokens = await getArkoseAndAccessToken(proxy)
-                    cls._create_request_args(cookies, headers)
-                    cls._set_api_key(api_key)
-                    if arkose_token is None:
-                        raise MissingAuthError("No arkose token found in .har file")
+                 # need_arkose フラグを取得
+                text_data = json.loads(requirements.get("text", "{}"))
+                need_arkose = text_data.get("turnstile", {}).get("required", False)
 
-                if "proofofwork" in requirements:
+
+                if "proofofwork" in requirements and not need_arkose: 
                     proofofwork = generate_proof_token(
                         **requirements["proofofwork"],
                         user_agent=cls._headers["user-agent"],
-                        proofTokens=proofTokens
+                        proofTokens=proofTokens,
+                        har_data=har_data  
                     )
+                else:
+                    proofofwork = None
+
                 if debug.logging:
                     print(
-                        'Arkose:', False if not need_arkose else arkose_token[:12]+"...",
+                        'turnstile:', False if not need_arkose else turnstile_token[:12]+"...",
                         'Proofofwork:', False if proofofwork is None else proofofwork[:12]+"...",
                     )
-                ws = None
-                if need_arkose:
-                    async with session.post(f"{cls.url}/backend-api/register-websocket", headers=cls._headers) as response:
-                        wss_url = (await response.json()).get("wss_url")
-                    if wss_url:
-                        ws = await session.ws_connect(wss_url)    
+
                 websocket_request_id = str(uuid.uuid4())
                 data = {
                     "action": action,
@@ -453,15 +500,19 @@ class OpenaiChat(AsyncGeneratorProvider, ProviderModelMixin):
                 if action != "continue":
                     messages = messages if conversation_id is None else [messages[-1]]
                     data["messages"] = cls.create_messages(messages, image_request)
+
                 headers = {
                     "accept": "text/event-stream",
                     "Openai-Sentinel-Chat-Requirements-Token": chat_token,
                     **cls._headers
                 }
-                if need_arkose:
-                    headers["Openai-Sentinel-Arkose-Token"] = arkose_token
-                if proofofwork is not None:
-                    headers["Openai-Sentinel-Proof-Token"] = proofofwork
+               # turnstileTokenがNoneでない場合のみヘッダーに追加します
+                if turnstile_token is not None:  
+                   headers["Openai-Sentinel-turnstile-Token"] = turnstile_token
+                if  proofofwork is not None:
+                   headers["Openai-Sentinel-Proof-Token"] = proofofwork
+
+                logger.debug("会話リクエストを送信します: %s", data)
                 async with session.post(
                     f"{cls.url}/backend-anon/conversation"
                     if cls._api_key is None else
@@ -472,33 +523,38 @@ class OpenaiChat(AsyncGeneratorProvider, ProviderModelMixin):
                     cls._update_request_args(session)
                     if response.status == 403 and max_retries > 0:
                         max_retries -= 1
-                        if debug.logging:
-                            print(f"Retry: Error {response.status}: {await response.text()}")
+                        logger.warning("会話リクエストが拒否されました。再試行します: %s, %s", response.status, await response.text())
                         await asyncio.sleep(5)
                         continue
                     await raise_for_status(response)
-                    async for chunk in cls.iter_messages_chunk(response.iter_lines(), session, conversation, ws):
+                    logger.debug("会話リクエストのレスポンス: %s", response.status)
+                    # ws を削除
+                    async for chunk in cls.iter_messages_chunk(response.iter_lines(), session, conversation):
                         if return_conversation:
                             history_disabled = False
                             return_conversation = False
                             yield conversation
                         yield chunk
                 if auto_continue and conversation.finish_reason == "max_tokens":
+                    logger.debug("最大トークン数に達しました。会話を続行します")
                     conversation.finish_reason = None
                     action = "continue"
                     await asyncio.sleep(5)
                 else:
                     break
             if history_disabled and auto_continue:
+                logger.debug("履歴が無効で自動続行が有効です。会話を削除します")
                 await cls.delete_conversation(session, cls._headers, conversation.conversation_id)
 
     @staticmethod
     async def iter_messages_ws(ws: ClientWebSocketResponse, conversation_id: str, is_curl: bool) -> AsyncIterator:
         while True:
+            logger.debug("WebSocketからメッセージを受信します")
             if is_curl:
                 message = json.loads(ws.recv()[0])
             else:
                 message = await ws.receive_json()
+            logger.debug("WebSocketからのメッセージ: %s", message)
             if message["conversation_id"] == conversation_id:
                 yield base64.b64decode(message["body"])
 
@@ -514,7 +570,9 @@ class OpenaiChat(AsyncGeneratorProvider, ProviderModelMixin):
         async for message in messages:
             if message.startswith(b'{"wss_url":'):
                 message = json.loads(message)
+                logger.debug("WebSocketのURLを受信しました: %s", message["wss_url"])
                 ws = await session.ws_connect(message["wss_url"]) if ws is None else ws
+                logger.debug("WebSocketに接続しました")
                 try:
                     async for chunk in cls.iter_messages_chunk(
                         cls.iter_messages_ws(ws, message["conversation_id"], hasattr(ws, "recv")),
@@ -522,7 +580,11 @@ class OpenaiChat(AsyncGeneratorProvider, ProviderModelMixin):
                     ):
                         yield chunk
                 finally:
-                    await ws.aclose() if hasattr(ws, "aclose") else await ws.close()
+                    if hasattr(ws, "aclose"):
+                        await ws.aclose()
+                    else:
+                        await ws.close()
+                    logger.debug("WebSocketを切断しました")
                 break
             async for chunk in cls.iter_messages_line(session, message, fields):
                 if fields.finish_reason is not None:
@@ -538,19 +600,23 @@ class OpenaiChat(AsyncGeneratorProvider, ProviderModelMixin):
 
     @classmethod
     async def iter_messages_line(cls, session: StreamSession, line: bytes, fields: Conversation) -> AsyncIterator:
+        logger.debug("メッセージ行を処理します: %s", line)
         if not line.startswith(b"data: "):
             return
         elif line.startswith(b"data: [DONE]"):
             if fields.finish_reason is None:
                 fields.finish_reason = "error"
+            logger.debug("メッセージの終わりを受信しました")
             return
         try:
             line = json.loads(line[6:])
+            logger.debug("メッセージ行をデコードしました: %s", line)
         except:
             return
         if "message" not in line:
             return
         if "error" in line and line["error"]:
+            logger.error("エラーメッセージを受信しました: %s", line["error"])
             raise RuntimeError(line["error"])
         if "message_type" not in line["message"]["metadata"]:
             return
@@ -572,9 +638,11 @@ class OpenaiChat(AsyncGeneratorProvider, ProviderModelMixin):
             yield line["message"]["content"]["parts"][0]
         if "finish_details" in line["message"]["metadata"]:
             fields.finish_reason = line["message"]["metadata"]["finish_details"]["type"]
+            logger.debug("メッセージの終了理由: %s", fields.finish_reason)
 
     @classmethod
     async def webview_access_token(cls) -> str:
+        logger.debug("OpenaiChat.webview_access_token() が呼び出されました")
         window = webview.create_window("OpenAI Chat", cls.url)
         await asyncio.sleep(3)
         prompt_input = None
@@ -585,19 +653,19 @@ class OpenaiChat(AsyncGeneratorProvider, ProviderModelMixin):
             except:
                 ...
         window.evaluate_js("""
-this._fetch = this.fetch;
-this.fetch = async (url, options) => {
-    const response = await this._fetch(url, options);
-    if (url == "https://chatgpt.com/backend-api/conversation") {
-        this._headers = options.headers;
-        return response;
-    }
-    return response;
-};
-""")
-        window.evaluate_js("""
-            document.querySelector('.from-token-main-surface-secondary').click();
+        this._fetch = this.fetch;
+        this.fetch = async (url, options) => {
+            const response = await this._fetch(url, options);
+            if (url == "https://chatgpt.com/backend-api/conversation") {
+                this._headers = options.headers;
+                return response;
+            }
+            return response;
+        };
         """)
+        window.evaluate_js("""
+                document.querySelector('.from-token-main-surface-secondary').click();
+            """)
         headers = None
         while headers is None:
             headers = window.evaluate_js("this._headers")
@@ -612,6 +680,7 @@ this.fetch = async (url, options) => {
 
     @classmethod
     async def nodriver_access_token(cls, proxy: str = None):
+        logger.debug("OpenaiChat.nodriver_access_token() が呼び出されました")
         try:
             import nodriver as uc
         except ImportError:
@@ -660,6 +729,7 @@ this.fetch = async (url, options) => {
         Returns:
             tuple[str, dict]: A tuple containing the access token and cookies.
         """
+        logger.debug("OpenaiChat.browse_access_token() が呼び出されました")
         driver = get_browser(proxy=proxy)
         try:
             driver.get(f"{cls.url}/")
@@ -682,13 +752,16 @@ this.fetch = async (url, options) => {
 
     @classmethod
     async def fetch_access_token(cls, session: StreamSession, headers: dict):
+        logger.debug("OpenaiChat.fetch_access_token() が呼び出されました")
         async with session.get(
             f"{cls.url}/api/auth/session",
             headers=headers
         ) as response:
+            logger.debug("アクセストークン取得リクエストのレスポンス: %s", response.status)
             if response.ok:
                 data = await response.json()
                 if "accessToken" in data:
+                    logger.debug("アクセストークンを取得しました")
                     return data["accessToken"]
 
     @staticmethod
@@ -700,6 +773,7 @@ this.fetch = async (url, options) => {
 
     @classmethod
     def _create_request_args(cls, cookies: Cookies = None, headers: dict = None, user_agent: str = None):
+        logger.debug("OpenaiChat._create_request_args() が呼び出されました")
         cls._headers = cls.get_default_headers() if headers is None else headers
         if user_agent is not None:
             cls._headers["user-agent"] = user_agent
@@ -708,30 +782,36 @@ this.fetch = async (url, options) => {
 
     @classmethod
     def _update_request_args(cls, session: StreamSession):
+        logger.debug("OpenaiChat._update_request_args() が呼び出されました")
         for c in session.cookie_jar if hasattr(session, "cookie_jar") else session.cookies.jar:
             cls._cookies[c.key if hasattr(c, "key") else c.name] = c.value
         cls._update_cookie_header()
 
     @classmethod
     def _set_api_key(cls, api_key: str):
+        logger.debug("OpenaiChat._set_api_key() が呼び出されました")
         cls._api_key = api_key
         cls._expires = int(time.time()) + 60 * 60 * 4
         cls._headers["authorization"] = f"Bearer {api_key}"
 
     @classmethod
     def _update_cookie_header(cls):
+        logger.debug("OpenaiChat._update_cookie_header() が呼び出されました")
         cls._headers["cookie"] = format_cookies(cls._cookies)
         if "oai-did" in cls._cookies:
             cls._headers["oai-device-id"] = cls._cookies["oai-did"]
+
 
 class Conversation(BaseConversation):
     """
     Class to encapsulate response fields.
     """
     def __init__(self, conversation_id: str = None, message_id: str = None, finish_reason: str = None):
+        logger.debug("Conversation.__init__() が呼び出されました。conversation_id: %s, message_id: %s", conversation_id, message_id)
         self.conversation_id = conversation_id
         self.message_id = message_id
         self.finish_reason = finish_reason
+
 
 class Response():
     """
@@ -744,6 +824,7 @@ class Response():
         messages: Messages,
         options: dict
     ):
+        logger.debug("Response.__init__() が呼び出されました。action: %s", action)
         self._generator = generator
         self.action = action
         self.is_end = False
@@ -753,6 +834,7 @@ class Response():
         self._fields = None
 
     async def generator(self) -> AsyncIterator:
+        logger.debug("Response.generator() が呼び出されました")
         if self._generator is not None:
             self._generator = None
             chunks = []
@@ -768,13 +850,16 @@ class Response():
             self.is_end = self._fields.finish_reason == "stop"
 
     def __aiter__(self):
+        logger.debug("Response.__aiter__() が呼び出されました")
         return self.generator()
 
     async def get_message(self) -> str:
+        logger.debug("Response.get_message() が呼び出されました")
         await self.generator()
         return self._message
 
     async def get_fields(self) -> dict:
+        logger.debug("Response.get_fields() が呼び出されました")
         await self.generator()
         return {
             "conversation_id": self._fields.conversation_id,
@@ -782,6 +867,7 @@ class Response():
         }
 
     async def create_next(self, prompt: str, **kwargs) -> Response:
+        logger.debug("Response.create_next() が呼び出されました")
         return await OpenaiChat.create(
             **self._options,
             prompt=prompt,
@@ -792,6 +878,7 @@ class Response():
         )
 
     async def do_continue(self, **kwargs) -> Response:
+        logger.debug("Response.do_continue() が呼び出されました")
         fields = await self.get_fields()
         if self.is_end:
             raise RuntimeError("Can't continue message. Message already finished.")
@@ -804,6 +891,7 @@ class Response():
         )
 
     async def create_variant(self, **kwargs) -> Response:
+        logger.debug("Response.create_variant() が呼び出されました")
         if self.action != "next":
             raise RuntimeError("Can't create variant from continue or variant request.")
         return await OpenaiChat.create(
@@ -815,6 +903,7 @@ class Response():
         )
 
     async def get_messages(self) -> list:
+        logger.debug("Response.get_messages() が呼び出されました")
         messages = self._messages
         messages.append({"role": "assistant", "content": await self.message()})
         return messages
