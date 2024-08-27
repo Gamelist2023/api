@@ -19,33 +19,32 @@ class You(AsyncGeneratorProvider, ProviderModelMixin):
     working = True
     supports_gpt_35_turbo = True
     supports_gpt_4 = True
-#  default_model = "command-r"
- #  default_model = "gpt-3.5-turbo"
-    default_model = "command-r-plus"
+    default_model = "gpt-3.5-turbo"
     default_vision_model = "agent"
     image_models = ["dall-e"]
     models = [
         default_model,
+        "gpt-4o-mini",
         "gpt-4o",
-        "gpt-4",
         "gpt-4-turbo",
-        "claude-instant",
-        "claude-2",
+        "gpt-4",
+        "claude-3.5-sonnet",
         "claude-3-opus",
         "claude-3-sonnet",
         "claude-3-haiku",
-        "gemini-pro",
+        "claude-2",
+        "llama-3.1-70b",
+        "llama-3",
+        "gemini-1-5-flash",
         "gemini-1-5-pro",
+        "gemini-1-0-pro",
         "databricks-dbrx-instruct",
         "command-r",
-        "llama3",
-        "zephyr",
+        "command-r-plus",
+        "dolphin-2.5",
         default_vision_model,
         *image_models
     ]
-    model_aliases = {
-        "claude-v2": "claude-2",
-    }
     _cookies = None
     _cookies_used = 0
     _telemetry_ids = []

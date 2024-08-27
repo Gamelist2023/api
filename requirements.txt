@@ -28,3 +28,4 @@ cryptography
 passlib
 bcrypt
 pusher
+python-dotenv

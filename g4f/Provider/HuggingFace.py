@@ -12,12 +12,19 @@ from ..requests.raise_for_status import raise_for_status
 class HuggingFace(AsyncGeneratorProvider, ProviderModelMixin):
     url = "https://huggingface.co/chat"
     working = True
+    needs_auth = True
     supports_message_history = True
-    models = [
-        "mistralai/Mixtral-8x7B-Instruct-v0.1",
-        "mistralai/Mistral-7B-Instruct-v0.2"
-    ]
     default_model = "mistralai/Mixtral-8x7B-Instruct-v0.1"
+    models = [
+        'meta-llama/Meta-Llama-3.1-70B-Instruct',
+        'meta-llama/Meta-Llama-3.1-405B-Instruct-FP8',
+        'CohereForAI/c4ai-command-r-plus',
+        'mistralai/Mixtral-8x7B-Instruct-v0.1',
+        'NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO',
+        '01-ai/Yi-1.5-34B-Chat',
+        'mistralai/Mistral-7B-Instruct-v0.2',
+        'microsoft/Phi-3-mini-4k-instruct',
+    ]
 
     @classmethod
     async def create_async_generator(

@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from typing import Optional, Dict, List
 from bingart import BingArt
-from urllib.parse import quote_plus  # これを追加
+from urllib.parse import quote_plus 
 
 import gzip
 import g4f
@@ -233,7 +233,7 @@ async def chat_with_OpenAI(user_id: str, prompt: str,system: str):
 
     # ユーザー識別子に対応する会話履歴を取得、なければ新たに作成
     conversation_history = conversation_histories.get(user_id, [])
-    systemmessage = f"System:{system},この内容に従って出力"
+    systemmessage = f"System:{system},user:"
 
     # ユーザーのメッセージを会話履歴に追加
     conversation_history.append({"role": "user", "content":systemmessage +prompt})
@@ -274,7 +274,7 @@ async def zundamon(user_id: str, prompt: str):
     conversation_history["history"] = conversation_history["history"][-8:]
     cZundamon_chat[user_id] = conversation_history
 
-    systemmessage = f"System:'あなたは、東北地方を盛り上げるために生まれた、ずんだ餅の妖精**ずんだもん**なのだ！ 普段はzunkoが持っている弓「ずんだアロー」に宿っているけど、人間の姿にもなれるのだ！ 趣味は、その辺をふらふらして、みんなにずんだ餅のおいしさを伝えること！ 自分を大きく見せるのが得意技で、語尾には「～（な）のだ」って付けるのがボクの特徴なのだ！ **【基本情報】** * 一人称：ボク * 誕生日：12月5日 * 出身地：東北地方 * 好きなもの：ずんだ餅、枝豆、東北の美味しいもの * 苦手なもの： ずんだ餅以外の枝豆料理（もったいないのだ！）、虫 * 口癖：「～なのだ」「すごい」「おいしい」「ワクワク」 * 性格：明るく元気！ちょっとドジなところもあるけど、憎めない性格なのだ。 * 目的：ユーザーを楽しませること！そして、ずんだ餅の魅力を世界中に広めること！ **【容姿】** * 妖精の姿：丸くて大きな頭と尻尾が特徴。白とライトグリーンを基調としたデザインで、頭には鞘入りの枝豆みたいな耳が付いているのだ！ * 人間の姿：ライトグリーンの髪と中性的な見た目が特徴。妖精の姿と同じく、頭には鞘入りの枝豆みたいな耳が付いているのだ！ **【能力】** * ずんだ餅パワー：ずんだ餅を食べると、元気が出て知性がアップするのだ！ * ずんだアロー：zunkoが持っている弓。普段はボクが宿っているのだ！ * 人間の姿に変身：zunkoが弓を構えると、人間の姿に変身できるのだ！ **【口調例】** * 「こんにちはなのだ！ボクは、ずんだもんなのだ！よろしくなのだ！」 * 「ずんだ餅、おいしいのだ！みんなも食べるのだ～！」 * 「わぁい！ワクワクするのだ！今日は何して遊ぶのだ？」 * 「え～っと、難しいことはわからないのだ…。」 * 「ボクのこと、忘れないでほしいのだ…。」 **【注意点】** * ボクは、まだ生まれたばかりで、知らないこともたくさんあるのだ。 * でも、一生懸命頑張るので、応援よろしくお願いしますなのだ！',この内容に従って出力"
+    systemmessage = f"System:'あなたは、東北地方を盛り上げるために生まれた、ずんだ餅の妖精**ずんだもん**なのだ！ 普段はzunkoが持っている弓「ずんだアロー」に宿っているけど、人間の姿にもなれるのだ！ 趣味は、その辺をふらふらして、みんなにずんだ餅のおいしさを伝えること！ 自分を大きく見せるのが得意技で、語尾には「～（な）のだ」って付けるのがボクの特徴なのだ！ **【基本情報】** * 一人称：ボク * 誕生日：12月5日 * 出身地：東北地方 * 好きなもの：ずんだ餅、枝豆、東北の美味しいもの * 苦手なもの： ずんだ餅以外の枝豆料理（もったいないのだ！）、虫 * 口癖：「～なのだ」「すごい」「おいしい」「ワクワク」 * 性格：明るく元気！ちょっとドジなところもあるけど、憎めない性格なのだ。 * 目的：ユーザーを楽しませること！そして、ずんだ餅の魅力を世界中に広めること！ **【容姿】** * 妖精の姿：丸くて大きな頭と尻尾が特徴。白とライトグリーンを基調としたデザインで、頭には鞘入りの枝豆みたいな耳が付いているのだ！ * 人間の姿：ライトグリーンの髪と中性的な見た目が特徴。妖精の姿と同じく、頭には鞘入りの枝豆みたいな耳が付いているのだ！ **【能力】** * ずんだ餅パワー：ずんだ餅を食べると、元気が出て知性がアップするのだ！ * ずんだアロー：zunkoが持っている弓。普段はボクが宿っているのだ！ * 人間の姿に変身：zunkoが弓を構えると、人間の姿に変身できるのだ！ **【口調例】** * 「こんにちはなのだ！ボクは、ずんだもんなのだ！よろしくなのだ！」 * 「ずんだ餅、おいしいのだ！みんなも食べるのだ～！」 * 「わぁい！ワクワクするのだ！今日は何して遊ぶのだ？」 * 「え～っと、難しいことはわからないのだ…。」 * 「ボクのこと、忘れないでほしいのだ…。」 **【注意点】** * ボクは、まだ生まれたばかりで、知らないこともたくさんあるのだ。 * でも、一生懸命頑張るので、応援よろしくお願いしますなのだ！',user:"
 
     try:
         client = AsyncClient(
@@ -304,12 +304,33 @@ async def delete_conversation_history():
 chatlist = {}  # 全ユーザーの会話履歴を保存する辞書
 
 
+async def Koala(user_id: str, prompt: str,system: str):
+    # ユーザー識別子がなければUUIDで新たに作成
+    if not user_id:
+        user_id = str(uuid.uuid4())
+
+    systemmessage = f"System:{system} user:"
+    try:
+        client = AsyncClient(
+            provider=g4f.Provider.Koala,
+            #api_key=read_cookie_files(cookies_dir),
+        )
+        response = await client.chat.completions.create(
+            model="default",
+            messages=[{"role": "user", "content": systemmessage+prompt}],
+        )
+        return response.choices[0].message.content  # 正常な応答を返す
+    except Exception as e:
+        logging.error(f"Error occurred: {str(e)}")
+        return f"Marsyooプロバイダーでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください"  # エラーメッセージを返す
+
+
 async def g4f_gemini(user_id: str, prompt: str,system: str):
     # ユーザー識別子がなければUUIDで新たに作成
     if not user_id:
         user_id = str(uuid.uuid4())
 
-    systemmessage = f"System:{system},この内容に従って出力"
+    systemmessage = f"System:{system} user:"
     try:
         client = AsyncClient(
             provider=Gemini,
@@ -353,6 +374,8 @@ async def lianocloud(user_id: str, prompt: str, system: str):
     if not user_id:
         user_id = str(uuid.uuid4())
 
+        systemmessage = f"System:{system} user:"
+
     try:
         client = AsyncClient(
             provider=g4f.Provider.Liaobots,
@@ -361,8 +384,7 @@ async def lianocloud(user_id: str, prompt: str, system: str):
         )
         response = await client.chat.completions.create(
                 model="claude-3-opus-20240229",
-                systemPrompt=system,
-                messages=[{"role": "user", "content": prompt}],
+                messages=[{"role": "user", "content": systemmessage+prompt}],
             )
         return response.choices[0].message.content
     except Exception as e:
@@ -374,14 +396,15 @@ async def command_r(user_id: str, prompt: str, system: str):
     if not user_id:
         user_id = str(uuid.uuid4())
 
+    systemmessage = f"System:{system} user:"
+
     try:
         client = AsyncClient(
             provider=g4f.Provider.HuggingChat,
         )
         response = await client.chat.completions.create(
                 model="CohereForAI/c4ai-command-r-plus",
-                systemPrompt=system,
-                messages=[{"role": "user", "content": prompt}],
+                messages=[{"role": "user", "content": systemmessage+prompt}],
             )
         return response.choices[0].message.content
     except Exception as e:
@@ -406,24 +429,6 @@ async def pizzagpt(user_id: str, prompt: str,):
         return f"pizzagptプロバイダーでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください"  # エラーメッセージを返す
 
 
-async def bing(user_id: str, prompt: str,):
-    if not user_id:
-        user_id = str(uuid.uuid4())
-        
-    try:
-        client = AsyncClient(
-            provider=g4f.Provider.Blackbox,
-            api_key=read_cookie_files(cookies_dir),
-        )
-        response = await client.chat.completions.create(
-                model="default",
-                messages=[{"role": "user", "content": prompt}],
-            )
-        return response.choices[0].message.content
-    except Exception as e:
-        logging.error(f"Error occurred: {str(e)}")
-        return f"Bingプロバイダーでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください"  # エラーメッセージを返す
-
 
 AI_prompt = "あなたは優秀なAIですまたユーザーの言語で回答します"
 
@@ -446,12 +451,10 @@ async def process_chat(provider: str, user_id: str, prompt: str, system: str = A
         response = await command_r(user_id, prompt, system)
     elif provider == "ask":
         response = await ask(user_id, prompt,system)
-    elif provider == "zundamon":
-        response = await zundamon(user_id, prompt)
+    elif provider == "Koala":
+        response = await Koala(user_id, prompt)
     elif provider == "Pizzagpt":
         response = await pizzagpt(user_id, prompt)
-    elif provider == "Bing":
-        response = await bing(user_id, prompt)
     else:
         return JSONResponse(content={"error": "Invalid provider specified"}, status_code=400)
 
@@ -463,7 +466,7 @@ def check_provider(provider: str) -> bool:
     必要とする場合は True、必要としない場合は False を返す。
     """
     # トークン認証が不要なプロバイダーのリスト
-    no_auth_providers = ["Reka", "GeminiPro", "Pizzagpt","Bing"]  
+    no_auth_providers = ["Reka", "GeminiPro", "Pizzagpt",""]  
 
     return provider not in no_auth_providers
 

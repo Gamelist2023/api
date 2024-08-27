@@ -13,10 +13,10 @@ from .base_provider import AsyncGeneratorProvider, ProviderModelMixin
 
 
 class GeminiProChat(AsyncGeneratorProvider, ProviderModelMixin):
-    url = "https://www.chatgot.one/"
+    url = "https://gemini-pro.chat/"
     working = True
     supports_message_history = True
-    default_model = ''
+    default_model = 'gemini-pro'
 
     @classmethod
     async def create_async_generator(

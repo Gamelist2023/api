@@ -1,3 +1,4 @@
+import g4f.Provider
 from g4f.client import Client
 from g4f.client.async_client import AsyncClient
 from g4f.cookies import set_cookies_dir, read_cookie_files
@@ -13,17 +14,17 @@ g4f.debug.version_check = True  # Disable automatic version checking
 cookies_dir = os.path.join(os.path.dirname(__file__), "har")
 
 client = Client(
-        provider=OpenaiChat,
+        provider=g4f.Provider.Koala,
         #api_key="AIzaSyA_WGA0iKHarVC_XOEE_GkH4SPPypqWYsg"
         api_key=read_cookie_files(cookies_dir),
               )
 response =  client.chat.completions.create(
-    model="auto",
+    model="default",
     messages=[{"role": "user", "content": "hello"}],
-  #  stream=True,
+    #stream=True,
 )
 
 print(response.choices[0].message.content)
-##for chunk in response:
-  #  if chunk.choices[0].delta.content:
-#        print(chunk.choices[0].delta.content, flush=True, end="")
+#for chunk in response:
+#  if chunk.choices[0].delta.content:
+#    print(chunk.choices[0].delta.content, flush=True, end="")

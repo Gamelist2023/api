@@ -11,12 +11,7 @@ class Reka(AbstractProvider):
     working         = True
     needs_auth      = True
     supports_stream = True
-    models = [
-        "reka-core",
-        "reka-flash"
-        "reka-edge"
-    ]
-    default_vision_model = "reka-core"
+    default_vision_model = "reka"
     cookies         = {}
 
     @classmethod
@@ -73,7 +68,7 @@ class Reka(AbstractProvider):
         json_data = {
             'conversation_history': conversation,
             'stream': True,
-            'use_search_engine': True,
+            'use_search_engine': False,
             'use_code_interpreter': False,
             'model_name': 'reka-core',
             'random_seed': int(time.time() * 1000),
