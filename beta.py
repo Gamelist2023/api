@@ -211,7 +211,7 @@ async def geminipro(user_id: str, prompt: str):
                 api_key=Li_auth,  # 正しい関数名に修正
             )
             response = await client.chat.completions.create(
-                model="gemini-1.5-pro-latest",
+                model="gemini-1.5-flash",
                 messages=[{"role": "user", "content": prompt}],
             )
             add_ai_response_to_history(user_id, response.choices[0].message.content)
@@ -255,7 +255,7 @@ async def chat_with_OpenAI(user_id: str, prompt: str,system: str):
         return response.choices[0].message.content  # 正常な応答を返す
     except Exception as e:
         logging.error(f"Error occurred: {str(e)}")
-        return "OpenAIのプロバイダーでエラーが発生しました。何度も起きる場合は他のプロバイダーを使用してください"  # エラーメッセージを返す
+        return "OpenAIのプロバイダーでエラーが発生しました。何度も起きる場合は他のプロバイダーを使用してください　現在OpenAIの認証を突破できず使用できません"  # エラーメッセージを返す
 
 cZundamon_chat = {}
 
@@ -289,7 +289,7 @@ async def zundamon(user_id: str, prompt: str):
         return response.choices[0].message.content  # 正常な応答を返す
     except Exception as e:
         logging.error(f"Error occurred: {str(e)}")
-        return "OpenAIのZUNDAMONモデルでエラーが発生しました。何度も起きる場合は他のプロバイダーを使用してください"  # エラーメッセージを返す
+        return "OpenAIのZUNDAMONモデルでエラーが発生しました。何度も起きる場合は他のプロバイダーを使用してください 現在OpenAIの認証を突破できず使用できません"  # エラーメッセージを返す
 
 # 10分後に会話履歴を削除するタスク
 async def delete_conversation_history():
@@ -304,20 +304,18 @@ async def delete_conversation_history():
 chatlist = {}  # 全ユーザーの会話履歴を保存する辞書
 
 
-async def Koala(user_id: str, prompt: str,system: str):
+async def Koala(user_id: str, prompt: str):
     # ユーザー識別子がなければUUIDで新たに作成
     if not user_id:
         user_id = str(uuid.uuid4())
 
-    systemmessage = f"System:{system} user:"
     try:
         client = AsyncClient(
             provider=g4f.Provider.Koala,
-            #api_key=read_cookie_files(cookies_dir),
         )
         response = await client.chat.completions.create(
             model="default",
-            messages=[{"role": "user", "content": systemmessage+prompt}],
+            messages=[{"role": "user", "content": prompt}],
         )
         return response.choices[0].message.content  # 正常な応答を返す
     except Exception as e:
@@ -355,7 +353,7 @@ async def reka_core(user_id: str, prompt: str):
             api_key=read_cookie_files(cookies_dir),
         )
         response = await client.chat.completions.create(
-                model="reka",
+                model="default",
                 messages=[{"role": "user", "content": prompt}],
             )
 
@@ -420,7 +418,7 @@ async def pizzagpt(user_id: str, prompt: str,):
             provider=g4f.Provider.Pizzagpt,
         )
         response = await client.chat.completions.create(
-                model="pizzagpt",
+                model="default",
                 messages=[{"role": "user", "content": prompt}],
             )
         return response.choices[0].message.content
@@ -466,7 +464,7 @@ def check_provider(provider: str) -> bool:
     必要とする場合は True、必要としない場合は False を返す。
     """
     # トークン認証が不要なプロバイダーのリスト
-    no_auth_providers = ["Reka", "GeminiPro", "Pizzagpt",""]  
+    no_auth_providers = ["Reka", "GeminiPro", "Pizzagpt","Koala"]  
 
     return provider not in no_auth_providers
 
