@@ -2,41 +2,55 @@ from __future__ import annotations
 
 import json, requests, re
 
-from curl_cffi      import requests as cf_reqs
-from ..typing       import CreateResult, Messages
+from curl_cffi import requests as cf_reqs
+from ..typing import CreateResult, Messages
 from .base_provider import ProviderModelMixin, AbstractProvider
-from .helper        import format_prompt
+from .helper import format_prompt
 
 class HuggingChat(AbstractProvider, ProviderModelMixin):
-    url             = "https://huggingface.co/chat"
-    working         = True
+    url = "https://huggingface.co/chat"
+    working = True
     supports_stream = True
-    default_model   = "mistralai/Mixtral-8x7B-Instruct-v0.1"
+    default_model = "meta-llama/Meta-Llama-3.1-70B-Instruct"
+    
     models = [
         'meta-llama/Meta-Llama-3.1-70B-Instruct',
-        'meta-llama/Meta-Llama-3.1-405B-Instruct-FP8',
-        'CohereForAI/c4ai-command-r-plus',
-        'mistralai/Mixtral-8x7B-Instruct-v0.1',
-        'NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO',
-        '01-ai/Yi-1.5-34B-Chat',
-        'mistralai/Mistral-7B-Instruct-v0.2',
-        'microsoft/Phi-3-mini-4k-instruct',
+        'CohereForAI/c4ai-command-r-plus-08-2024',
+        'Qwen/Qwen2.5-72B-Instruct',
+        'NousResearch/Hermes-3-Llama-3.1-8B',
+        'mistralai/Mistral-Nemo-Instruct-2407',
+        'microsoft/Phi-3.5-mini-instruct',
     ]
     
     model_aliases = {
-        "mistralai/Mistral-7B-Instruct-v0.1": "mistralai/Mistral-7B-Instruct-v0.2"
+        "llama-3.1-70b": "meta-llama/Meta-Llama-3.1-70B-Instruct",
+        "command-r-plus": "CohereForAI/c4ai-command-r-plus-08-2024",
+        "qwen-2-72b": "Qwen/Qwen2.5-72B-Instruct",
+        "hermes-3": "NousResearch/Hermes-3-Llama-3.1-8B",
+        "mistral-nemo": "mistralai/Mistral-Nemo-Instruct-2407",
+        "phi-3.5-mini": "microsoft/Phi-3.5-mini-instruct",
     }
 
+    @classmethod
+    def get_model(cls, model: str) -> str:
+        if model in cls.models:
+            return model
+        elif model in cls.model_aliases:
+            return cls.model_aliases[model]
+        else:
+            return cls.default_model
+            
     @classmethod
     def create_completion(
         cls,
         model: str,
         messages: Messages,
         stream: bool,
-        **kwargs) -> CreateResult:
+        **kwargs
+    ) -> CreateResult:
+        model = cls.get_model(model)
         
-        if (model in cls.models) :
-            
+        if model in cls.models:
             session = cf_reqs.Session()
             session.headers = {
                 'accept': '*/*',
@@ -63,7 +77,7 @@ class HuggingChat(AbstractProvider, ProviderModelMixin):
             response = session.post('https://huggingface.co/chat/conversation', json=json_data)
             conversationId = response.json()['conversationId']
 
-            response = session.get(f'https://huggingface.co/chat/conversation/{conversationId}/__data.json?x-sveltekit-invalidated=01',)
+            response = session.get(f'https://huggingface.co/chat/conversation/{conversationId}/__data.json?x-sveltekit-invalidated=11',)
 
             data: list = (response.json())["nodes"][1]["data"]
             keys: list[int] = data[data[0]["messages"]]
@@ -71,12 +85,12 @@ class HuggingChat(AbstractProvider, ProviderModelMixin):
             messageId: str = data[message_keys["id"]]
 
             settings = {
-                "inputs":format_prompt(messages),
-                "id":messageId,
-                "is_retry":False,
-                "is_continue":False,
-                "web_search":False,
-                "tools":[]
+                "inputs": format_prompt(messages),
+                "id": messageId,
+                "is_retry": False,
+                "is_continue": False,
+                "web_search": False,
+                "tools": []
             }
 
             headers = {
@@ -96,9 +110,8 @@ class HuggingChat(AbstractProvider, ProviderModelMixin):
                 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36',
             }
 
-
             files = {
-                'data': (None,  json.dumps(settings, separators=(',', ':'))),
+                'data': (None, json.dumps(settings, separators=(',', ':'))),
             }
 
             response = requests.post(f'https://huggingface.co/chat/conversation/{conversationId}',
@@ -119,11 +132,10 @@ class HuggingChat(AbstractProvider, ProviderModelMixin):
                     if first_token:
                         token = token.lstrip().replace('\u0000', '')
                         first_token = False
-                    
                     else:
                         token = token.replace('\u0000', '')
 
-                    yield (token)
+                    yield token
                 
                 elif line["type"] == "finalAnswer":
                     break

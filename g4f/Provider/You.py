@@ -19,12 +19,11 @@ class You(AsyncGeneratorProvider, ProviderModelMixin):
     working = True
     supports_gpt_35_turbo = True
     supports_gpt_4 = True
-    default_model = "gpt-3.5-turbo"
+    default_model = "gpt-4o-mini"
     default_vision_model = "agent"
     image_models = ["dall-e"]
     models = [
         default_model,
-        "gpt-4o-mini",
         "gpt-4o",
         "gpt-4-turbo",
         "gpt-4",

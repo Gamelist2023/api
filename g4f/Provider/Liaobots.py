@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import uuid
-
 from aiohttp import ClientSession, BaseConnector
 
 from ..typing import AsyncResult, Messages
@@ -29,13 +28,22 @@ models = {
         "context": "128K",
     },
     "gpt-4o-free": {
-        "context": "8K",
         "id": "gpt-4o-free",
-        "maxLength": 31200,
-        "model": "ChatGPT",
         "name": "GPT-4o-free",
+        "model": "ChatGPT",
         "provider": "OpenAI",
+        "maxLength": 31200,
         "tokenLimit": 7800,
+        "context": "8K",
+    },
+    "gpt-4o-2024-08-06": {
+        "id": "gpt-4o-2024-08-06",
+        "name": "GPT-4o",
+        "model": "ChatGPT",
+        "provider": "OpenAI",
+        "maxLength": 260000,
+        "tokenLimit": 126000,
+        "context": "128K",
     },
     "gpt-4-turbo-2024-04-09": {
         "id": "gpt-4-turbo-2024-04-09",
@@ -46,35 +54,106 @@ models = {
         "tokenLimit": 126000,
         "context": "128K",
     },
-    "gpt-4o": {
-        "context": "128K",
-        "id": "gpt-4o",
-        "maxLength": 124000,
-        "model": "ChatGPT",
-        "name": "GPT-4o",
-        "provider": "OpenAI",
-        "tokenLimit": 62000,
+    "grok-2": {
+        "id": "grok-2",
+        "name": "Grok-2",
+        "model": "Grok",
+        "provider": "x.ai",
+        "maxLength": 400000,
+        "tokenLimit": 100000,
+        "context": "100K",
     },
-    "gpt-4-0613": {
-        "id": "gpt-4-0613",
-        "name": "GPT-4",
-        "model": "ChatGPT",
-        "provider": "OpenAI",
-        "maxLength": 260000,
-        "tokenLimit": 126000,
-        "context": "128K",
+    "grok-2-mini": {
+        "id": "grok-2-mini",
+        "name": "Grok-2-mini",
+        "model": "Grok",
+        "provider": "x.ai",
+        "maxLength": 400000,
+        "tokenLimit": 100000,
+        "context": "100K",
     },
-    "gpt-4-turbo": {
-        "id": "gpt-4-turbo",
-        "name": "GPT-4-Turbo",
-        "model": "ChatGPT",
-        "provider": "OpenAI",
-        "maxLength": 260000,
-        "tokenLimit": 126000,
-        "context": "128K",
+    "claude-3-opus-20240229": {
+        "id": "claude-3-opus-20240229",
+        "name": "Claude-3-Opus",
+        "model": "Claude",
+        "provider": "Anthropic",
+        "maxLength": 800000,
+        "tokenLimit": 200000,
+        "context": "200K",
+    },
+    "claude-3-opus-20240229-aws": {
+        "id": "claude-3-opus-20240229-aws",
+        "name": "Claude-3-Opus-Aws",
+        "model": "Claude",
+        "provider": "Anthropic",
+        "maxLength": 800000,
+        "tokenLimit": 200000,
+        "context": "200K",
+    },
+    "claude-3-opus-20240229-gcp": {
+        "id": "claude-3-opus-20240229-gcp",
+        "name": "Claude-3-Opus-Gcp",
+        "model": "Claude",
+        "provider": "Anthropic",
+        "maxLength": 800000,
+        "tokenLimit": 200000,
+        "context": "200K",
+    },
+    "claude-3-5-sonnet-20240620": {
+        "id": "claude-3-5-sonnet-20240620",
+        "name": "Claude-3.5-Sonnet",
+        "model": "Claude",
+        "provider": "Anthropic",
+        "maxLength": 800000,
+        "tokenLimit": 200000,
+        "context": "200K",
+    },
+    "claude-3-sonnet-20240229": {
+        "id": "claude-3-sonnet-20240229",
+        "name": "Claude-3-Sonnet",
+        "model": "Claude",
+        "provider": "Anthropic",
+        "maxLength": 800000,
+        "tokenLimit": 200000,
+        "context": "200K",
+    },
+    "claude-3-haiku-20240307": {
+        "id": "claude-3-haiku-20240307",
+        "name": "Claude-3-Haiku",
+        "model": "Claude",
+        "provider": "Anthropic",
+        "maxLength": 800000,
+        "tokenLimit": 200000,
+        "context": "200K",
+    },
+    "claude-2.1": {
+        "id": "claude-2.1",
+        "name": "Claude-2.1-200k",
+        "model": "Claude",
+        "provider": "Anthropic",
+        "maxLength": 800000,
+        "tokenLimit": 200000,
+        "context": "200K",
+    },
+    "gemini-1.5-flash-002": {
+        "id": "gemini-1.5-flash-002",
+        "name": "Gemini-1.5-Flash-1M",
+        "model": "Gemini",
+        "provider": "Google",
+        "maxLength": 4000000,
+        "tokenLimit": 1000000,
+        "context": "1024K",
+    },
+    "gemini-1.5-pro-002": {
+        "id": "gemini-1.5-pro-002",
+        "name": "Gemini-1.5-Pro-1M",
+        "model": "Gemini",
+        "provider": "Google",
+        "maxLength": 4000000,
+        "tokenLimit": 1000000,
+        "context": "1024K",
     },
 }
-
 
 
 class Liaobots(AsyncGeneratorProvider, ProviderModelMixin):
@@ -82,27 +161,50 @@ class Liaobots(AsyncGeneratorProvider, ProviderModelMixin):
     working = True
     supports_message_history = True
     supports_system_message = True
-    supports_gpt_35_turbo = True
     supports_gpt_4 = True
-    default_model = "gpt-4o"
+    default_model = "gpt-3.5-turbo"
     models = list(models.keys())
+    
     model_aliases = {
         "gpt-4o-mini": "gpt-4o-mini-free",
         "gpt-4o": "gpt-4o-free",
+        "gpt-4o": "gpt-4o-2024-08-06",
+              
         "gpt-4-turbo": "gpt-4-turbo-2024-04-09",
-        "gpt-4-": "gpt-4-0613",
+        "gpt-4": "gpt-4-0613",
+        
         "claude-3-opus": "claude-3-opus-20240229",
         "claude-3-opus": "claude-3-opus-20240229-aws",
         "claude-3-opus": "claude-3-opus-20240229-gcp",
         "claude-3-sonnet": "claude-3-sonnet-20240229",
-        "claude-3-5-sonnet": "claude-3-5-sonnet-20240620",
+        "claude-3.5-sonnet": "claude-3-5-sonnet-20240620",
         "claude-3-haiku": "claude-3-haiku-20240307",
-        "gemini-pro": "gemini-1.5-pro-latest",
-        "gemini-pro": "gemini-1.0-pro-latest",
-        "gemini-flash": "gemini-1.5-flash-latest",
+        "claude-2.1": "claude-2.1",
+        
+        "gemini-flash": "gemini-1.5-flash-002",
+        "gemini-pro": "gemini-1.5-pro-002",
     }
+    
     _auth_code = ""
     _cookie_jar = None
+
+    @classmethod
+    def get_model(cls, model: str) -> str:
+        """
+        Retrieve the internal model identifier based on the provided model name or alias.
+        """
+        if model in cls.model_aliases:
+            model = cls.model_aliases[model]
+        if model not in models:
+            raise ValueError(f"Model '{model}' is not supported.")
+        return model
+
+    @classmethod
+    def is_supported(cls, model: str) -> bool:
+        """
+        Check if the given model is supported.
+        """
+        return model in models or model in cls.model_aliases
 
     @classmethod
     async def create_async_generator(
@@ -114,6 +216,8 @@ class Liaobots(AsyncGeneratorProvider, ProviderModelMixin):
         connector: BaseConnector = None,
         **kwargs
     ) -> AsyncResult:
+        model = cls.get_model(model)
+        
         headers = {
             "authority": "liaobots.com",
             "content-type": "application/json",
@@ -186,24 +290,6 @@ class Liaobots(AsyncGeneratorProvider, ProviderModelMixin):
                             raise RuntimeError("Invalid session")
                         if chunk:
                             yield chunk.decode(errors="ignore")
-
-    @classmethod
-    def get_model(cls, model: str) -> str:
-        """
-        Retrieve the internal model identifier based on the provided model name or alias.
-        """
-        if model in cls.model_aliases:
-            model = cls.model_aliases[model]
-        if model not in models:
-            raise ValueError(f"Model '{model}' is not supported.")
-        return model
-
-    @classmethod
-    def is_supported(cls, model: str) -> bool:
-        """
-        Check if the given model is supported.
-        """
-        return model in models or model in cls.model_aliases
 
     @classmethod
     async def initialize_auth_code(cls, session: ClientSession) -> None:
