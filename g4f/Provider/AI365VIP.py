@@ -10,9 +10,7 @@ from .helper import format_prompt
 class AI365VIP(AsyncGeneratorProvider, ProviderModelMixin):
     url = "https://chat.ai365vip.com"
     api_endpoint = "/api/chat"
-    working = True
-    supports_gpt_35_turbo = True
-    supports_gpt_4 = True
+    working = False
     default_model = 'gpt-3.5-turbo'
     models = [
         'gpt-3.5-turbo',

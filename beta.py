@@ -28,7 +28,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 import g4f.Provider
 from g4f.client import AsyncClient
-from g4f.Provider import OpenaiChat, Gemini, You, Bing, GeminiProChat, Reka,Liaobots,GeminiPro
+from g4f.Provider import Gemini
 import uuid
 import psutil, socket
 import platform
@@ -178,7 +178,7 @@ async def ask(user_id: str, prompt: str,system: str,token: str):
 
 
 
-async def geminipro(user_id: str, prompt: str):
+async def random(user_id: str, prompt: str):
     # ユーザー識別子がなければUUIDで新たに作成
     if not user_id:
         user_id = str(uuid.uuid4())
@@ -195,10 +195,10 @@ async def geminipro(user_id: str, prompt: str):
 
     try:
         client = AsyncClient(
-            provider=GeminiProChat,
+            provider=g4f.Provider.MagickPen,
         )
         response = await client.chat.completions.create(
-            model="gemini-pro",
+            model="default",
             messages=[{"role": "user", "content": prompt}],
         )
         return response.choices[0].message.content  # 正常な応答を返す
@@ -207,18 +207,17 @@ async def geminipro(user_id: str, prompt: str):
         try:
             # GeminiProが失敗した場合、Liaobotsを試す
             client = AsyncClient(
-                provider=GeminiPro,
-                api_key=Li_auth,  # 正しい関数名に修正
+                provider=g4f.Provider.FreeNetfly,
             )
             response = await client.chat.completions.create(
-                model="gemini-1.5-flash",
+                model="gpt-3.5-turbo",
                 messages=[{"role": "user", "content": prompt}],
             )
             add_ai_response_to_history(user_id, response.choices[0].message.content)
             return response.choices[0].message.content  # Liaobotsからの正常な応答を返す
         except Exception as e:
             logging.error(f"Error occurred: {str(e)}")
-            return "GeminiProとLiaobotsの両方のプロバイダーでエラーが発生しました。他のプロバイダーを試してみてください"  # エラーメッセージを返す
+            return "FreeNetflyとマジックペンの両方のプロバイダーでエラーが発生しました。他のプロバイダーを試してみてください"  # エラーメッセージを返す
 
 def add_ai_response_to_history(user_id, ai_response):
     conversation_history = conversation_histories.get(user_id, [])
@@ -344,12 +343,12 @@ async def g4f_gemini(user_id: str, prompt: str,system: str):
         return f"Geminiプロバイダーでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください"  # エラーメッセージを返す
 
 
-async def reka_core(user_id: str, prompt: str):
+async def Ai4Chat(user_id: str, prompt: str):
     if not user_id:
         user_id = str(uuid.uuid4())
     try:
         client = AsyncClient(
-            provider=Reka,
+            provider=g4f.Provider.Ai4Chat,
             api_key=read_cookie_files(cookies_dir),
         )
         response = await client.chat.completions.create(
@@ -365,7 +364,7 @@ async def reka_core(user_id: str, prompt: str):
         return clean_response
     except Exception as e:
         logging.error(f"Error occurred: {str(e)}")
-        return f"Rekaプロバイダーでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください追記：Rekaに関してはCookieの不具合の可能性が大なんで管理者に連絡してください"  # エラーメッセージを返す
+        return f"Ai4Chatプロバイダーでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください追記：Rekaに関してはCookieの不具合の可能性が大なんで管理者に連絡してください"  # エラーメッセージを返す
 
 
 async def lianocloud(user_id: str, prompt: str, system: str):
@@ -377,11 +376,10 @@ async def lianocloud(user_id: str, prompt: str, system: str):
     try:
         client = AsyncClient(
             provider=g4f.Provider.Liaobots,
-            auth=Li_auth,
 
         )
         response = await client.chat.completions.create(
-                model="claude-3-opus-20240229",
+                model="gpt-4o-mini-free",
                 messages=[{"role": "user", "content": systemmessage+prompt}],
             )
         return response.choices[0].message.content
@@ -439,11 +437,11 @@ async def process_chat(provider: str, user_id: str, prompt: str, system: str = A
         response = await chat_with_OpenAI(user_id, prompt,system)
     elif provider == 'Gemini':
         response = await g4f_gemini(user_id, prompt,system)
-    elif provider == 'GeminiPro':
-        response = await geminipro(user_id, prompt)
-    elif provider == 'Reka':
-        response = await reka_core(user_id, prompt)
-    elif provider == "Claude3":
+    elif provider == 'Random':
+        response = await random(user_id, prompt)
+    elif provider == 'Ai4Chat':
+        response = await Ai4Chat(user_id, prompt)
+    elif provider == "gpt4Mini":
         response = await lianocloud(user_id, prompt, system)
     elif provider == "command_r":
         response = await command_r(user_id, prompt, system)
@@ -464,7 +462,7 @@ def check_provider(provider: str) -> bool:
     必要とする場合は True、必要としない場合は False を返す。
     """
     # トークン認証が不要なプロバイダーのリスト
-    no_auth_providers = ["Reka", "GeminiPro", "Pizzagpt","Koala"]  
+    no_auth_providers = ["Ai4Chat", "GeminiPro", "Pizzagpt","Koala"]  
 
     return provider not in no_auth_providers
 

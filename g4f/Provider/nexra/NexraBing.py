@@ -1,82 +1,93 @@
 from __future__ import annotations
-from aiohttp import ClientSession
-from ...typing import AsyncResult, Messages
-from ..base_provider import AsyncGeneratorProvider, ProviderModelMixin
-from ..helper import format_prompt
+
 import json
+import requests
 
-class NexraBing(AsyncGeneratorProvider, ProviderModelMixin):
+from ...typing import CreateResult, Messages
+from ..base_provider import ProviderModelMixin, AbstractProvider
+from ..helper import format_prompt
+
+class NexraBing(AbstractProvider, ProviderModelMixin):
     label = "Nexra Bing"
+    url = "https://nexra.aryahcr.cc/documentation/bing/en"
     api_endpoint = "https://nexra.aryahcr.cc/api/chat/complements"
-
-    bing_models = {
-        'Bing (Balanced)': 'Balanced',
-        'Bing (Creative)': 'Creative',
-        'Bing (Precise)': 'Precise'
-    }
+    working = True
+    supports_stream = True
     
-    models = [*bing_models.keys()]
+    default_model = 'Balanced'
+    models = [default_model, 'Creative', 'Precise']
+    
+    model_aliases = {
+        "gpt-4": "Balanced",
+        "gpt-4": "Creative",
+        "gpt-4": "Precise",
+    }
 
     @classmethod
-    async def create_async_generator(
+    def get_model(cls, model: str) -> str:
+        if model in cls.models:
+            return model
+        elif model in cls.model_aliases:
+            return cls.model_aliases[model]
+        else:
+            return cls.default_model
+            
+    @classmethod
+    def create_completion(
         cls,
         model: str,
         messages: Messages,
+        stream: bool = False,
         proxy: str = None,
+        markdown: bool = False,
         **kwargs
-    ) -> AsyncResult:
+    ) -> CreateResult:
+        model = cls.get_model(model)
+
         headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            "Origin": cls.url or "https://default-url.com",
-            "Referer": f"{cls.url}/chat" if cls.url else "https://default-url.com/chat",
+            'Content-Type': 'application/json'
         }
+        
+        data = {
+            "messages": [
+                {
+                    "role": "user",
+                    "content": format_prompt(messages)
+                }
+            ],
+            "conversation_style": model,
+            "markdown": markdown,
+            "stream": stream,
+            "model": "Bing"
+        }
+        
+        response = requests.post(cls.api_endpoint, headers=headers, json=data, stream=True)
 
-        async with ClientSession(headers=headers) as session:
-            prompt = format_prompt(messages)
-            if prompt is None:
-                raise ValueError("Prompt cannot be None")
+        return cls.process_response(response)
 
-            data = {
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ],
-                "conversation_style": cls.bing_models.get(model, 'Balanced'),
-                "markdown": False,
-                "stream": True,
-                "model": "Bing"
-            }
+    @classmethod
+    def process_response(cls, response):
+        if response.status_code != 200:
+            yield f"Error: {response.status_code}"
+            return
 
-            full_response = ""
-            last_message = ""
+        full_message = ""
+        for chunk in response.iter_content(chunk_size=None):
+            if chunk:
+                messages = chunk.decode('utf-8').split('\x1e')
+                for message in messages:
+                    try:
+                        json_data = json.loads(message)
+                        if json_data.get('finish', False):
+                            return
+                        current_message = json_data.get('message', '')
+                        if current_message:
+                            new_content = current_message[len(full_message):]
+                            if new_content:
+                                yield new_content
+                                full_message = current_message
+                    except json.JSONDecodeError:
+                        continue
 
-            async with session.post(cls.api_endpoint, json=data, proxy=proxy) as response:
-                response.raise_for_status()
-                
-                async for line in response.content:
-                    if line:
-                        raw_data = line.decode('utf-8').strip()
-
-                        parts = raw_data.split('')
-                        for part in parts:
-                            if part:
-                                try:
-                                    json_data = json.loads(part)
-                                except json.JSONDecodeError:
-                                    continue
-
-                                if json_data.get("error"):
-                                    raise Exception("Error in API response")
-
-                                if json_data.get("finish"):
-                                    break
-
-                                if message := json_data.get("message"):
-                                    if message != last_message:
-                                        full_response = message
-                                        last_message = message
-
-            yield full_response.strip()
+        if not full_message:
+            yield "No message received"

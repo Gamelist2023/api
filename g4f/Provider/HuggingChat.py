@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import json, requests, re
+import json
+import requests
 
 from curl_cffi import requests as cf_reqs
 from ..typing import CreateResult, Messages
@@ -17,6 +18,8 @@ class HuggingChat(AbstractProvider, ProviderModelMixin):
         'meta-llama/Meta-Llama-3.1-70B-Instruct',
         'CohereForAI/c4ai-command-r-plus-08-2024',
         'Qwen/Qwen2.5-72B-Instruct',
+        'nvidia/Llama-3.1-Nemotron-70B-Instruct-HF',
+        'meta-llama/Llama-3.2-11B-Vision-Instruct',
         'NousResearch/Hermes-3-Llama-3.1-8B',
         'mistralai/Mistral-Nemo-Instruct-2407',
         'microsoft/Phi-3.5-mini-instruct',
@@ -26,6 +29,8 @@ class HuggingChat(AbstractProvider, ProviderModelMixin):
         "llama-3.1-70b": "meta-llama/Meta-Llama-3.1-70B-Instruct",
         "command-r-plus": "CohereForAI/c4ai-command-r-plus-08-2024",
         "qwen-2-72b": "Qwen/Qwen2.5-72B-Instruct",
+        "nemotron-70b": "nvidia/Llama-3.1-Nemotron-70B-Instruct-HF",
+        "llama-3.2-11b": "meta-llama/Llama-3.2-11B-Vision-Instruct",
         "hermes-3": "NousResearch/Hermes-3-Llama-3.1-8B",
         "mistral-nemo": "mistralai/Mistral-Nemo-Instruct-2407",
         "phi-3.5-mini": "microsoft/Phi-3.5-mini-instruct",
@@ -69,17 +74,18 @@ class HuggingChat(AbstractProvider, ProviderModelMixin):
                 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36',
             }
 
-            print(model)
             json_data = {
                 'model': model,
             }
 
             response = session.post('https://huggingface.co/chat/conversation', json=json_data)
-            conversationId = response.json()['conversationId']
+            if response.status_code != 200:
+                raise RuntimeError(f"Request failed with status code: {response.status_code}, response: {response.text}")
 
-            response = session.get(f'https://huggingface.co/chat/conversation/{conversationId}/__data.json?x-sveltekit-invalidated=11',)
+            conversationId = response.json().get('conversationId')
+            response = session.get(f'https://huggingface.co/chat/conversation/{conversationId}/__data.json?x-sveltekit-invalidated=11')
 
-            data: list = (response.json())["nodes"][1]["data"]
+            data: list = response.json()["nodes"][1]["data"]
             keys: list[int] = data[data[0]["messages"]]
             message_keys: dict = data[keys[0]]
             messageId: str = data[message_keys["id"]]
@@ -120,22 +126,26 @@ class HuggingChat(AbstractProvider, ProviderModelMixin):
                 files=files,
             )
 
-            first_token = True
+            full_response = ""
             for line in response.iter_lines():
-                line = json.loads(line)
+                if not line:
+                    continue
+                try:
+                    line = json.loads(line)
+                except json.JSONDecodeError as e:
+                    print(f"Failed to decode JSON: {line}, error: {e}")
+                    continue
                 
                 if "type" not in line:
                     raise RuntimeError(f"Response: {line}")
                 
                 elif line["type"] == "stream":
-                    token = line["token"]
-                    if first_token:
-                        token = token.lstrip().replace('\u0000', '')
-                        first_token = False
-                    else:
-                        token = token.replace('\u0000', '')
-
-                    yield token
+                    token = line["token"].replace('\u0000', '')
+                    full_response += token
                 
                 elif line["type"] == "finalAnswer":
                     break
+            
+            full_response = full_response.replace('<|im_end|', '').replace('\u0000', '').strip()
+
+            yield full_response

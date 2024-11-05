@@ -14,10 +14,10 @@ class Prodia(AsyncGeneratorProvider, ProviderModelMixin):
     working = True
     
     default_model = 'absolutereality_v181.safetensors [3d9d4d2b]'
-    models = [
+    image_models = [
         '3Guofeng3_v34.safetensors [50f420de]',
         'absolutereality_V16.safetensors [37db0fc3]',
-        'absolutereality_v181.safetensors [3d9d4d2b]',
+        default_model,
         'amIReal_V41.safetensors [0a8a2e61]',
         'analog-diffusion-1.0.ckpt [9ca13f02]',
         'aniverse_v30.safetensors [579e6f85]',
@@ -81,6 +81,7 @@ class Prodia(AsyncGeneratorProvider, ProviderModelMixin):
         'timeless-1.0.ckpt [7c4971d4]',
         'toonyou_beta6.safetensors [980f6b15]',
     ]
+    models = [*image_models]
 
     @classmethod
     def get_model(cls, model: str) -> str:

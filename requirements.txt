@@ -30,3 +30,4 @@ bcrypt
 pusher
 python-dotenv
 python-multipart
+cloudscraper
