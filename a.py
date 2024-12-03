@@ -11,10 +11,11 @@ g4f.debug.version_check = True  # Disable automatic version checking
 cookies_dir = os.path.join(os.path.dirname(__file__), "har")
 
 client = Client(
-        provider=g4f.Provider.Koala,
+        provider=g4f.Provider.Copilot,
         #api_key="AIzaSyA_WGA0iKHarVC_XOEE_GkH4SPPypqWYsg"
         api_key=read_cookie_files(cookies_dir),
-              )
+        )
+
 response =  client.chat.completions.create(
     model="default",
     messages=[{"role": "user", "content": "hello"}],

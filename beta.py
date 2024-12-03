@@ -164,7 +164,7 @@ async def ask(user_id: str, prompt: str,system: str,token: str):
             api_key="JhB5e55aNwzuAKFawXKF47VuGmCWQ3CS",  # 正しい関数名に修正
         )
         response = await client.chat.completions.create(
-            model="meta-llama/Meta-Llama-3-70B-Instruct",
+            model="meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo",
             messages=UseSystem+conversation_history,
         )
         add_ai_response_to_history(user_id, response.choices[0].message.content)
@@ -195,7 +195,7 @@ async def random(user_id: str, prompt: str):
 
     try:
         client = AsyncClient(
-            provider=g4f.Provider.MagickPen,
+            provider=g4f.Provider.Reka,
         )
         response = await client.chat.completions.create(
             model="default",
@@ -207,17 +207,17 @@ async def random(user_id: str, prompt: str):
         try:
             # GeminiProが失敗した場合、Liaobotsを試す
             client = AsyncClient(
-                provider=g4f.Provider.FreeNetfly,
+                provider=g4f.Provider.Copilot,
             )
             response = await client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="default",
                 messages=[{"role": "user", "content": prompt}],
             )
             add_ai_response_to_history(user_id, response.choices[0].message.content)
             return response.choices[0].message.content  # Liaobotsからの正常な応答を返す
         except Exception as e:
             logging.error(f"Error occurred: {str(e)}")
-            return "FreeNetflyとマジックペンの両方のプロバイダーでエラーが発生しました。他のプロバイダーを試してみてください"  # エラーメッセージを返す
+            return "FreeNetflyとRekaの両方のプロバイダーでエラーが発生しました。他のプロバイダーを試してみてください"  # エラーメッセージを返す
 
 def add_ai_response_to_history(user_id, ai_response):
     conversation_history = conversation_histories.get(user_id, [])
@@ -277,18 +277,18 @@ async def zundamon(user_id: str, prompt: str):
 
     try:
         client = AsyncClient(
-            provider=g4f.Provider.OpenaiChat,
+            provider=g4f.Provider.Copilot,
             api_key=read_cookie_files(zundamons),  # 正しい関数名に修正
         )
         response = await client.chat.completions.create(
-            model="auto",
+            model="default",
             messages=[{"role": "system", "content": systemmessage},{"role": "user", "content": prompt}]
         )
         conversation_history["history"].append({"role": "assistant", "content": response.choices[0].message.content})
         return response.choices[0].message.content  # 正常な応答を返す
     except Exception as e:
         logging.error(f"Error occurred: {str(e)}")
-        return "OpenAIのZUNDAMONモデルでエラーが発生しました。何度も起きる場合は他のプロバイダーを使用してください 現在OpenAIの認証を突破できず使用できません"  # エラーメッセージを返す
+        return "BIng AIモデルでエラーが発生しました。何度も起きる場合は他のプロバイダーを使用してください 現在OpenAIの認証を突破できず使用できません"  # エラーメッセージを返す
 
 # 10分後に会話履歴を削除するタスク
 async def delete_conversation_history():
@@ -319,7 +319,7 @@ async def Koala(user_id: str, prompt: str):
         return response.choices[0].message.content  # 正常な応答を返す
     except Exception as e:
         logging.error(f"Error occurred: {str(e)}")
-        return f"Marsyooプロバイダーでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください"  # エラーメッセージを返す
+        return f"Koalaプロバイダーでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください"  # エラーメッセージを返す
 
 
 async def g4f_gemini(user_id: str, prompt: str,system: str):
@@ -348,7 +348,7 @@ async def Ai4Chat(user_id: str, prompt: str):
         user_id = str(uuid.uuid4())
     try:
         client = AsyncClient(
-            provider=g4f.Provider.Ai4Chat,
+            provider=g4f.Provider.Pizzagpt,
             api_key=read_cookie_files(cookies_dir),
         )
         response = await client.chat.completions.create(
@@ -375,17 +375,17 @@ async def lianocloud(user_id: str, prompt: str, system: str):
 
     try:
         client = AsyncClient(
-            provider=g4f.Provider.Liaobots,
+            provider=g4f.Provider.You,
 
         )
         response = await client.chat.completions.create(
-                model="gpt-4o-mini-free",
+                model="gpt-4o-mini",
                 messages=[{"role": "user", "content": systemmessage+prompt}],
             )
         return response.choices[0].message.content
     except Exception as e:
         logging.error(f"Error occurred: {str(e)}")
-        return f"Liaobotsプロバイダー,model claude-3でエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください"  # エラーメッセージを返す
+        return f"You providerでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください"  # エラーメッセージを返す
 
 
 async def command_r(user_id: str, prompt: str, system: str):
@@ -399,7 +399,7 @@ async def command_r(user_id: str, prompt: str, system: str):
             provider=g4f.Provider.HuggingChat,
         )
         response = await client.chat.completions.create(
-                model="CohereForAI/c4ai-command-r-plus",
+                model="CohereForAI/c4ai-command-r-plus-08-2024",
                 messages=[{"role": "user", "content": systemmessage+prompt}],
             )
         return response.choices[0].message.content
@@ -626,7 +626,7 @@ async def hugging_stream(user_id: str, prompt: str, system: str):
             api_key=read_cookie_files(cookies_dir),  # 正しい関数名に修正
         )
         async for chunk in client.chat.completions.create(
-            model="CohereForAI/c4ai-command-r-plus",
+            model="CohereForAI/c4ai-command-r-plus-08-2024",
             messages=[{"role": "user", "content":systemmessage +prompt}],
             stream=True,
         ):

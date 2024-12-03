@@ -108,6 +108,25 @@ body {
     border: 1px solid var(--blur-border);
 }
 
+.new_version {
+    position: absolute;
+    right: 0;
+    top: 0;
+    padding: 10px;
+    font-weight: 500;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: var(--colour-3);
+}
+
+.white .new_version {
+    color: var(--colour-1);
+}
+
+.new_version a {
+    color: var(--colour-4);
+    text-decoration: underline dotted;
+}
+
 .conversations {
     max-width: 300px;
     padding: var(--section-gap);
@@ -175,6 +194,10 @@ body {
     right: 0;
     transform: translateY(-50%);
     filter: blur(calc(0.5 * 70vw)) opacity(var(--opacity));
+}
+
+body.white .gradient{
+    display: none;
 }
 
 .conversations {
@@ -259,7 +282,6 @@ body {
     flex-direction: column;
     gap: var(--section-gap);
     padding: var(--inner-gap) var(--section-gap);
-    padding-bottom: 0;
 }
 
 .message.print {
@@ -271,7 +293,11 @@ body {
 }
 
 .message.regenerate {
-    opacity: 0.75;
+    background-color: var(--colour-6);
+}
+
+.white .message.regenerate {
+    background-color: var(--colour-4);
 }
 
 .message:last-child {
@@ -407,6 +433,7 @@ body {
 
 .message .count .fa-clipboard.clicked,
 .message .count .fa-print.clicked,
+.message .count .fa-rotate.clicked,
 .message .count .fa-volume-high.active {
     color: var(--accent);
 }
@@ -428,6 +455,29 @@ body {
 
 .message .content .count {
     font-size: 12px;
+}
+
+.media_player {
+    display: none;
+}
+
+.media_player audio {
+    right: 28px;
+    position: absolute;
+    top: -4px;
+    z-index: 900;
+}
+
+.media_player.show {
+    display: block;
+}
+
+.media_player .fa-x {
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    z-index: 1000;
+    cursor: pointer;
 }
 
 .count_total {
@@ -472,19 +522,16 @@ body {
     padding: 0 4px;
 }
 
+.stop_generating-hidden, .regenerate-hidden {
+    animation: hide_popup 0.4s;
+    display: none;
+}
+
 .stop_generating, .toolbar .regenerate {
     position: absolute;
     z-index: 1000000;
     top: 0;
     right: 0;
-}
-
-@media only screen and (min-width: 40em) {
-    .stop_generating, .toolbar .regenerate {
-        left: 50%;
-        transform: translateX(-50%);
-        right: auto;
-    }
 }
 
 .stop_generating button, .toolbar .regenerate button{
@@ -501,6 +548,26 @@ body {
     gap: 12px;
     cursor: pointer;
     animation: show_popup 0.4s;
+    height: 28px;
+}
+
+.toolbar .regenerate {
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
+}
+
+.toolbar .regenerate span {
+    display: none;
+}
+
+@media only screen and (min-width: 40em) {
+    .stop_generating {
+        right: 4px;
+    }
+    .toolbar .regenerate span {
+        display: block;
+    }
 }
 
 .toolbar .hide-input {
@@ -522,11 +589,6 @@ body {
         opacity: 0;
         transform: translateY(10px);
     }
-}
-
-.stop_generating-hidden #cancelButton, .regenerate-hidden #regenerateButton {
-    animation: hide_popup 0.4s;
-    display: none;
 }
 
 .typing {
@@ -779,8 +841,7 @@ select {
     overflow: auto;
 }
 
-
-#cursor {
+.cursor {
     line-height: 17px;
     margin-left: 3px;
     -webkit-animation: blink 0.8s infinite;
@@ -1003,6 +1064,47 @@ a:-webkit-any-link {
     width: 1px;
 }
 
+.hljs-iframe-button, .hljs-iframe-close {
+    position: absolute;
+    bottom: 1rem;
+    right: 1rem;
+    padding: 7px;
+    border-radius: .25rem;
+    border: 1px solid #ffffff22;
+    background-color: #2d2b57;
+    color: #fff;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+}
+
+.hljs-iframe-button:hover, .hljs-iframe-close:hover {
+    border-color: #ffffff44;
+    color: #ffffff77;
+}
+
+.hljs-iframe-container {
+    position: fixed;
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000001;
+    background-color: #fff;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+}
+
+.hljs-iframe {
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    border: none;
+    overflow: auto;
+}
+
 .white {
     --blur-bg: transparent;
     --accent: #007bff;
@@ -1049,11 +1151,19 @@ a:-webkit-any-link {
     padding: var(--inner-gap) var(--inner-gap) var(--inner-gap) 0;
 }
 
-.settings, .images {
+.settings, .log {
     width: 100%;
     display: flex;
     flex-direction: column;
     overflow: auto;
+}
+
+.log {
+    white-space: pre-wrap;
+}
+
+.log.hidden {
+    display: none;
 }
 
 .settings .paper {
@@ -1140,7 +1250,10 @@ a:-webkit-any-link {
     .message .user {
         display: none;
     }
-    .message.regenerate {
-        opacity: 1;
+    body {
+        height: auto;
+    }
+    .box {
+        backdrop-filter: none;
     }
 }

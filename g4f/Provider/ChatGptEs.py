@@ -56,8 +56,10 @@ class ChatGptEs(AsyncGeneratorProvider, ProviderModelMixin):
             nonce_ = re.findall(r'data-nonce="(.+?)"', await initial_response.text())[0]
             post_id = re.findall(r'data-post-id="(.+?)"', await initial_response.text())[0]
 
+            formatted_prompt = format_prompt(messages)
+            
             conversation_history = [
-                "Human: strictly respond in the same language as my prompt, preferably English"
+                "Human: You are a helpful AI assistant. Please respond in the same language that the user uses in their message. Provide accurate, relevant and helpful information while maintaining a friendly and professional tone. If you're not sure about something, please acknowledge that and provide the best information you can while noting any uncertainties. Focus on being helpful while respecting the user's choice of language."
             ]
 
             for message in messages[:-1]:
@@ -71,7 +73,7 @@ class ChatGptEs(AsyncGeneratorProvider, ProviderModelMixin):
                 'post_id': post_id,
                 'url': cls.url,
                 'action': 'wpaicg_chat_shortcode_message',
-                'message': messages[-1]['content'],
+                'message': formatted_prompt,
                 'bot_id': '0',
                 'chatbot_identity': 'shortcode',
                 'wpaicg_chat_client_id': os.urandom(5).hex(),

@@ -97,10 +97,6 @@ class BaseRetryProvider(BaseProvider):
 
 ProviderType = Union[Type[BaseProvider], BaseRetryProvider]
 
-class FinishReason():
-    def __init__(self, reason: str):
-        self.reason = reason
-
 class Streaming():
     def __init__(self, data: str) -> None:
         self.data = data
