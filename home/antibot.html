@@ -920,7 +920,6 @@
             if (response.ok) {
                 const pusher = new Pusher('b7ac1ff8c001c16fab67', {
                     cluster: 'ap3',
-                    enableStats: true
                 });
                 // ログイン成功
                 document.getElementById('login-form').style.display = 'none';
@@ -928,41 +927,7 @@
                 document.getElementById('server-management').style.display = 'block';
                 document.getElementById('taskbar').style.display = 'flex';
 
-                pusher.connection.bind('connected', async () => {
-                    const tokenResponse = await fetch('/pusher/auth', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        },
-                        body: `socket_id=${pusher.connection.socket_id}&channel_name=private-my-channel`
-                    });
-
-              
                 
-
-                const tokenData = await tokenResponse.json();
-                const authToken = tokenData.auth;
-
-                // privateチャンネルを購読
-                const channel = pusher.subscribe('private-my-channel', { auth: authToken });
-
-                // console_log イベントを購読
-                channel.bind('console_log', function (data) {
-                    const consoleOutput = document.getElementById('console-output');
-                    const logMessage = document.createElement('p');
-                    logMessage.textContent = data.message;
-                    consoleOutput.appendChild(logMessage);
-                });
-
-                // server_status イベントを購読
-                channel.bind('server_status', function (data) {
-                    updateServerStatus(data.data);
-                });
-
-                // resources イベントを購読
-                channel.bind('resources', function (data) {
-                    updateResourceMonitor(data);
-                });
 
                 // ログイン後にサーバー情報とプロセス情報を取得
                 globalPassword = document.getElementById('password').value; // パスワードをグローバル変数に保存
@@ -975,7 +940,7 @@
                 getFileList(); //ファイルマネージャー
                 applySettings();
                 loadSettings();
-                });
+               
 
                 // 自動ログインが有効であればパスワードを保存
                 if (document.getElementById('auto-login').checked) {
@@ -985,6 +950,44 @@
                     localStorage.setItem('autoLogin', 'false');
                     localStorage.removeItem('savedPassword');
                 }
+
+
+                pusher.connection.bind('connected', async () => {
+                    const tokenResponse = await fetch('/pusher/auth', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: `socket_id=${pusher.connection.socket_id}&channel_name=private-my-channel`
+                    });
+
+
+
+
+                    const tokenData = await tokenResponse.json();
+                    const authToken = tokenData.auth;
+
+                    // privateチャンネルを購読
+                    const channel = pusher.subscribe('private-my-channel', { auth: authToken });
+
+                    // console_log イベントを購読
+                    channel.bind('console_log', function (data) {
+                        const consoleOutput = document.getElementById('console-output');
+                        const logMessage = document.createElement('p');
+                        logMessage.textContent = data.message;
+                        consoleOutput.appendChild(logMessage);
+                    });
+
+                    // server_status イベントを購読
+                    channel.bind('server_status', function (data) {
+                        updateServerStatus(data.data);
+                    });
+
+                    // resources イベントを購読
+                    channel.bind('resources', function (data) {
+                        updateResourceMonitor(data);
+                    });
+                });
             } else {
                 // ログイン失敗時の処理
                 if (localStorage.getItem('autoLogin') === 'true') {
