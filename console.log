@@ -1,9 +1,44 @@
 INFO:     Will watch for changes in these directories: ['C:\\Users\\issei\\Documents\\Dev\\api']
 INFO:     Uvicorn running on http://0.0.0.0:5000 (Press CTRL+C to quit)
-INFO:     Started reloader process [4052] using StatReload
-INFO:     Started server process [16504]
+INFO:     Started reloader process [23648] using StatReload
+INFO:     Started server process [20604]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
-None
-INFO:     127.0.0.1:58899 - "GET / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:58899 - "GET /generate_image?token=AI010a340d-5142-4aa4-8007-294d692f2f18&prompt=cgat%0A HTTP/1.1" 200 OK
+$2b$12$O.DkSIzjSaomFKmTjXIKle/.lYfLsktHFIB4QxnHt74pKEESauLGm
+INFO:     127.0.0.1:48520 - "GET /home/stage.html HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:48521 - "GET /home/stage.html HTTP/1.1" 304 Not Modified
+WARNING:passlib.handlers.bcrypt:(trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "c:\Users\issei\Documents\Dev\api\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+a
+INFO:     127.0.0.1:48521 - "POST /antibot HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48565 - "GET /home/stage.html HTTP/1.1" 200 OK
+a
+INFO:     127.0.0.1:48565 - "POST /antibot HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48565 - "POST /pusher/auth HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48565 - "POST /admin/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48566 - "GET /home/stage.html HTTP/1.1" 200 OK
+a
+INFO:     127.0.0.1:48566 - "POST /antibot HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48566 - "POST /admin/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48569 - "POST /pusher/auth HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48569 - "POST /admin/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:24993 - "GET /home/stage.html HTTP/1.1" 200 OK
+a
+INFO:     127.0.0.1:24993 - "POST /antibot HTTP/1.1" 200 OK
+INFO:     127.0.0.1:24993 - "POST /pusher/auth HTTP/1.1" 200 OK
+INFO:     127.0.0.1:24993 - "POST /admin/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25128 - "GET /home/aa.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25235 - "GET /home/antibot.html HTTP/1.1" 200 OK
+gamelist1990s
+INFO:     127.0.0.1:25235 - "POST /antibot HTTP/1.1" 401 Unauthorized
+a
+INFO:     127.0.0.1:25236 - "POST /antibot HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25236 - "POST /admin/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25256 - "POST /admin/console_log HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25258 - "POST /admin/file_manager HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25260 - "POST /pusher/auth HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25257 - "GET /antibot/history HTTP/1.1" 200 OK

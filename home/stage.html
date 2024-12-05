@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <title>サーバー管理システム</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <style></style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://js.pusher.com/7.0/pusher.min.js"></script>
     <style>
         /* 全体的なスタイル */
         body {
@@ -17,15 +19,15 @@
 
         /* デスクトップ */
         #desktop {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%; 
-    padding-bottom: 40px; 
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding-bottom: 40px;
             background: #007bff;
             background: -webkit-linear-gradient(to bottom, #007bff, #663399);
-            background: linear-gradient(to bottom, #007bff, #663399); 
+            background: linear-gradient(to bottom, #007bff, #663399);
             overflow: hidden;
         }
 
@@ -41,9 +43,10 @@
             align-items: center;
             padding: 0 10px;
             z-index: 2;
-            display: none; 
-            bottom: 0; 
+            display: none;
+            bottom: 0;
         }
+
         #taskbar .icon {
             width: 30px;
             height: 30px;
@@ -66,7 +69,7 @@
             min-width: 300px;
             min-height: 200px;
             resize: both;
-            overflow-y: hidden; 
+            overflow-y: hidden;
             z-index: 1;
         }
 
@@ -78,15 +81,17 @@
             font-weight: bold;
             border-top-left-radius: 8px;
             border-top-right-radius: 8px;
-            cursor: move; 
+            cursor: move;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
+
         .window-titlebar h2 {
             margin: 0;
-            font-size: 14px; 
+            font-size: 14px;
         }
+
         .window-titlebar .controls button {
             background: none;
             border: none;
@@ -109,6 +114,7 @@
             border: 1px solid #ccc;
             background-color: #f1f1f1;
         }
+
         .tab button {
             background-color: inherit;
             float: left;
@@ -119,27 +125,31 @@
             transition: background-color 0.3s;
             font-size: 13px;
         }
+
         .tab button:hover {
             background-color: #ddd;
         }
+
         .tab button.active {
             background-color: #ccc;
         }
+
         .tabcontent {
             display: none;
             padding: 10px;
             border: 1px solid #ccc;
             border-top: none;
         }
-        .tablinks {
-    overflow-y: auto; 
-    -ms-overflow-style: none; 
-    scrollbar-width: none; 
-}
 
-.tablinks::-webkit-scrollbar { 
-    display: none;
-}
+        .tablinks {
+            overflow-y: auto;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .tablinks::-webkit-scrollbar {
+            display: none;
+        }
 
         /* コンソール出力 */
         #console-output {
@@ -158,11 +168,14 @@
             width: 100%;
             border-collapse: collapse;
         }
-        th, td {
+
+        th,
+        td {
             text-align: left;
             padding: 6px;
             border: 1px solid #ddd;
         }
+
         th {
             background-color: #f2f2f2;
         }
@@ -172,6 +185,7 @@
             display: block;
             margin-bottom: 5px;
         }
+
         input[type="text"],
         input[type="password"],
         textarea {
@@ -196,9 +210,11 @@
             border-radius: 4px;
             cursor: pointer;
         }
+
         .button:hover {
             background-color: #45a049;
         }
+
         .close-button {
             background-color: #f44336;
             border: none;
@@ -211,6 +227,7 @@
             border-radius: 4px;
             cursor: pointer;
         }
+
         .close-button:hover {
             background-color: #d32f2f;
         }
@@ -221,6 +238,7 @@
             margin: 0;
             padding: 0;
         }
+
         li {
             margin-bottom: 5px;
         }
@@ -252,72 +270,92 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0, 0, 0, 0.5);
-            display: none; 
-            z-index: 5; 
+            display: none;
+            z-index: 5;
         }
+
         /* iframeのスタイル */
         iframe {
             width: 100%;
             height: calc(100% - 36px);
             border: none;
         }
-        
 
-/* 電卓アプリのスタイル */
-#calculator-window {
-  width: 240px; /* 横幅を縮小 */
-  height: 300px; /* 高さを縮小 */
-}
 
-#calculator input[type="button"] {
-  width: 40px;  /* ボタンの横幅を縮小 */
-  height: 40px;  /* ボタンの高さを縮小 */
-  margin: 4px;  /* マージンを縮小 */
-  font-size: 16px; /* フォントサイズを縮小 */
-}
+        /* 電卓アプリのスタイル */
+        #calculator-window {
+            width: 240px;
+            /* 横幅を縮小 */
+            height: 300px;
+            /* 高さを縮小 */
+        }
 
-#calculator #display {
-  width: calc(100% - 18px); /* 表示領域の幅を調整 */
-  height: 30px;  /* 表示領域の高さを縮小 */
-  margin: 4px; /* マージンを縮小 */
-  font-size: 18px; /* フォントサイズを縮小 */
-}
+        #calculator input[type="button"] {
+            width: 40px;
+            /* ボタンの横幅を縮小 */
+            height: 40px;
+            /* ボタンの高さを縮小 */
+            margin: 4px;
+            /* マージンを縮小 */
+            font-size: 16px;
+            /* フォントサイズを縮小 */
+        }
 
-/* 時計アプリのスタイル */
-#clock-window {
-  width: 300px;
-  height: 100px;
-}
+        #calculator #display {
+            width: calc(100% - 18px);
+            /* 表示領域の幅を調整 */
+            height: 30px;
+            /* 表示領域の高さを縮小 */
+            margin: 4px;
+            /* マージンを縮小 */
+            font-size: 18px;
+            /* フォントサイズを縮小 */
+        }
 
-#clock {
-  width: 100%;
-  height: 100%;
-  font-size: 36px;
-  text-align: center;
-  line-height: 80px; /* 時計の文字を中央に配置 */
-}
-@media (max-width: 768px) {
-  .window {
-    min-width: 90%; /* 画面幅の90%に */
-    min-height: 60%; /* 画面高さの60%に */
-    top: 10%; /* 上からの位置を調整 */
-    left: 5%; /* 左からの位置を調整 */
-  }
+        /* 時計アプリのスタイル */
+        #clock-window {
+            width: 300px;
+            height: 100px;
+        }
 
-  #taskbar {
-    height: 60px; /* タスクバーの高さを大きく */
-  }
+        #clock {
+            width: 100%;
+            height: 100%;
+            font-size: 36px;
+            text-align: center;
+            line-height: 80px;
+            /* 時計の文字を中央に配置 */
+        }
 
-  #taskbar .icon {
-    width: 40px; /* アイコンサイズを大きく */
-    height: 40px; 
-    font-size: 24px;
-  }
+        @media (max-width: 768px) {
+            .window {
+                min-width: 90%;
+                /* 画面幅の90%に */
+                min-height: 60%;
+                /* 画面高さの60%に */
+                top: 10%;
+                /* 上からの位置を調整 */
+                left: 5%;
+                /* 左からの位置を調整 */
+            }
 
- 
-}
+            #taskbar {
+                height: 60px;
+                /* タスクバーの高さを大きく */
+            }
+
+            #taskbar .icon {
+                width: 40px;
+                /* アイコンサイズを大きく */
+                height: 40px;
+                font-size: 24px;
+            }
+
+
+        }
     </style>
 </head>
+
 <body>
     <div id="taskbar">
         <div class="icon" onclick="openWindow('server-management')">⚙️</div>
@@ -325,7 +363,7 @@
         <div class="icon" onclick="openWindow('notepad-window')">📝</div>
         <div class="icon" onclick="openWindow('resource-monitor-window')">📊</div>
         <div class="icon" onclick="openWindow('calculator-window')">🧮</div>
-        <div class="icon" onclick="openWindow('clock-window')">⏱️</div>        
+        <div class="icon" onclick="openWindow('clock-window')">⏱️</div>
     </div>
 
     <div id="desktop">
@@ -341,7 +379,8 @@
             </form>
         </div>
 
-        <div id="server-management" class="window" style="display: none; width: 800px; height: 600px; top: 100px; left: 100px;">
+        <div id="server-management" class="window"
+            style="display: none; width: 800px; height: 600px; top: 100px; left: 100px;">
             <div class="window-titlebar">
                 <h2>サーバー管理</h2>
                 <div class="controls">
@@ -384,11 +423,11 @@
                     <p>現在のBAN人数: <span id="banned-count">0</span></p>
                     <table id="ban-history">
                         <thead>
-                        <tr>
-                            <th>ユーザーID</th>
-                            <th>BAN時間</th>
-                            <th>解除</th>
-                        </tr>
+                            <tr>
+                                <th>ユーザーID</th>
+                                <th>BAN時間</th>
+                                <th>解除</th>
+                            </tr>
                         </thead>
                         <tbody>
                         </tbody>
@@ -418,7 +457,8 @@
                             <input type="text" id="show-file" name="file_name" required>
                             <button class="button" type="submit">表示</button>
                         </form>
-                        <pre id="show-result" style="height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin-top: 10px;"></pre>
+                        <pre id="show-result"
+                            style="height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin-top: 10px;"></pre>
                     </div>
                     <div class="management-section">
                         <form id="update-json-form">
@@ -443,7 +483,8 @@
             </div>
         </div>
 
-        <div id="web-browser-window" class="window" style="display: none; width: 800px; height: 600px; top: 150px; left: 150px;">
+        <div id="web-browser-window" class="window"
+            style="display: none; width: 800px; height: 600px; top: 150px; left: 150px;">
             <div class="window-titlebar">
                 <h2>Webブラウザ</h2>
                 <div class="controls">
@@ -455,9 +496,10 @@
             </div>
         </div>
 
-        
 
-        <div id="resource-monitor-window" class="window" style="display: none; width: 400px; height: 300px; top: 250px; left: 250px;">
+
+        <div id="resource-monitor-window" class="window"
+            style="display: none; width: 400px; height: 300px; top: 250px; left: 250px;">
             <div class="window-titlebar">
                 <h2>システムリソースモニター</h2>
                 <div class="controls">
@@ -471,68 +513,72 @@
         </div>
     </div>
 
-    <div id="calculator-window" class="window" style="display: none; width: 300px; height: 400px; top: 100px; left: 100px;">
-            <div class="window-titlebar">
-                <h2>電卓</h2>
-                <div class="controls">
-                    <button class="close-button" onclick="closeWindow('calculator-window')">X</button>
-                </div>
-            </div>
-            <div class="window-content">
-                <div id="calculator">
-                    <input type="text" id="display" readonly>
-                    <input type="button" value="7" onclick="inputDigit('7')"> 
-                    <input type="button" value="8" onclick="inputDigit('8')"> 
-                    <input type="button" value="9" onclick="inputDigit('9')"> 
-                    <input type="button" value="/" onclick="inputOperator('/')"> 
-                    <br>
-                    <input type="button" value="4" onclick="inputDigit('4')"> 
-                    <input type="button" value="5" onclick="inputDigit('5')"> 
-                    <input type="button" value="6" onclick="inputDigit('6')"> 
-                    <input type="button" value="*" onclick="inputOperator('*')"> 
-                    <br>
-                    <input type="button" value="1" onclick="inputDigit('1')"> 
-                    <input type="button" value="2" onclick="inputDigit('2')"> 
-                    <input type="button" value="3" onclick="inputDigit('3')"> 
-                    <input type="button" value="-" onclick="inputOperator('-')"> 
-                    <br>
-                    <input type="button" value="0" onclick="inputDigit('0')"> 
-                    <input type="button" value="." onclick="inputDecimal('.')"> 
-                    <input type="button" value="C" onclick="clearDisplay()"> 
-                    <input type="button" value="+" onclick="inputOperator('+')"> 
-                    <br>
-                    <input type="button" value="=" onclick="calculate()" style="width: 210px;"> 
-                </div>
+    <div id="calculator-window" class="window"
+        style="display: none; width: 300px; height: 400px; top: 100px; left: 100px;">
+        <div class="window-titlebar">
+            <h2>電卓</h2>
+            <div class="controls">
+                <button class="close-button" onclick="closeWindow('calculator-window')">X</button>
             </div>
         </div>
-
-        <div id="clock-window" class="window" style="display: none; width: 300px; height: 100px; top: 200px; left: 200px;">
-            <div class="window-titlebar">
-                <h2>時計</h2>
-                <div class="controls">
-                    <button class="close-button" onclick="closeWindow('clock-window')">X</button>
-                </div>
-            </div>
-            <div class="window-content">
-                <div id="clock"></div>
-            </div>
-        </div>
-     <div id="notepad-window" class="window" style="display: none; width: 600px; height: 400px; top: 200px; left: 200px;">
-            <div class="window-titlebar">
-                <h2>メモ帳</h2>
-                <div class="controls">
-                    <button class="close-button" onclick="closeWindow('notepad-window')">X</button>
-                </div>
-            </div>
-            <div class="window-content" style="padding-bottom: 40px;"> <textarea id="notepad-textarea" style="width: 100%; height: calc(100% - 35px);"></textarea>
+        <div class="window-content">
+            <div id="calculator">
+                <input type="text" id="display" readonly>
+                <input type="button" value="7" onclick="inputDigit('7')">
+                <input type="button" value="8" onclick="inputDigit('8')">
+                <input type="button" value="9" onclick="inputDigit('9')">
+                <input type="button" value="/" onclick="inputOperator('/')">
                 <br>
-                <button class="button" onclick="saveNotepad()" style="position: absolute; bottom: 10px; left: 10px;">保存</button> </div>
+                <input type="button" value="4" onclick="inputDigit('4')">
+                <input type="button" value="5" onclick="inputDigit('5')">
+                <input type="button" value="6" onclick="inputDigit('6')">
+                <input type="button" value="*" onclick="inputOperator('*')">
+                <br>
+                <input type="button" value="1" onclick="inputDigit('1')">
+                <input type="button" value="2" onclick="inputDigit('2')">
+                <input type="button" value="3" onclick="inputDigit('3')">
+                <input type="button" value="-" onclick="inputOperator('-')">
+                <br>
+                <input type="button" value="0" onclick="inputDigit('0')">
+                <input type="button" value="." onclick="inputDecimal('.')">
+                <input type="button" value="C" onclick="clearDisplay()">
+                <input type="button" value="+" onclick="inputOperator('+')">
+                <br>
+                <input type="button" value="=" onclick="calculate()" style="width: 210px;">
+            </div>
         </div>
+    </div>
+
+    <div id="clock-window" class="window" style="display: none; width: 300px; height: 100px; top: 200px; left: 200px;">
+        <div class="window-titlebar">
+            <h2>時計</h2>
+            <div class="controls">
+                <button class="close-button" onclick="closeWindow('clock-window')">X</button>
+            </div>
         </div>
-   </div>
+        <div class="window-content">
+            <div id="clock"></div>
+        </div>
+    </div>
+    <div id="notepad-window" class="window"
+        style="display: none; width: 600px; height: 400px; top: 200px; left: 200px;">
+        <div class="window-titlebar">
+            <h2>メモ帳</h2>
+            <div class="controls">
+                <button class="close-button" onclick="closeWindow('notepad-window')">X</button>
+            </div>
+        </div>
+        <div class="window-content" style="padding-bottom: 40px;"> <textarea id="notepad-textarea"
+                style="width: 100%; height: calc(100% - 35px);"></textarea>
+            <br>
+            <button class="button" onclick="saveNotepad()"
+                style="position: absolute; bottom: 10px; left: 10px;">保存</button>
+        </div>
+    </div>
+    </div>
+    </div>
 
 
- 
 
 
 
@@ -542,609 +588,638 @@
 
 
 
-<!-- JavaScript -->
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // ログインフォームの送信イベント
-        document.getElementById('login-form-form').addEventListener('submit', async (event) => {
-            event.preventDefault();
-            await login();
-        });
 
-         dragElement(document.getElementById("server-management"));
+    <!-- JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // ログインフォームの送信イベント
+            document.getElementById('login-form-form').addEventListener('submit', async (event) => {
+                event.preventDefault();
+                await login();
+            });
+
+            dragElement(document.getElementById("server-management"));
             dragElement(document.getElementById("web-browser-window"));
             dragElement(document.getElementById("notepad-window"));
             dragElement(document.getElementById("resource-monitor-window")); // リソースモニターウィンドウを追加
-            dragElement(document.getElementById("calculator-window")); 
+            dragElement(document.getElementById("calculator-window"));
             dragElement(document.getElementById("clock-window"));
 
             // 最初にステータスタブを開く
-           document.querySelector('#server-management .tab button:first-child').click();
-    });
-
-    let ws; // WebSocket オブジェクトをグローバルスコープに
-
-    // ログイン処理
-async function login() {
-    const password = document.getElementById('password').value;
-
-    try {
-        const response = await fetch('/antibot', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: `password=${password}`
+            document.querySelector('#server-management .tab button:first-child').click();
         });
 
-        if (response.ok) {
-            // ログイン成功
-            document.getElementById('login-form').style.display = 'none';
-            document.getElementById('overlay').style.display = 'none';
-            document.getElementById('server-management').style.display = 'block';
-            document.getElementById('taskbar').style.display = 'flex';
+        let ws; // WebSocket オブジェクトをグローバルスコープに
 
-            // WebSocket 接続を開始
-            ws = new WebSocket('wss://' + window.location.host + '/ws'); // ホスト名とポートを自動取得
+        // ログイン処理
+        async function login() {
+            const password = document.getElementById('password').value;
 
-            ws.onopen = () => {
-                console.log("WebSocket connection established");
-                getServerStatus();
-                getProcesses();
-                getConsoleLog();
-            };
+            try {
+                const response = await fetch('/antibot', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: `password=${password}`
+                });
 
-            ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
+                if (response.ok) {
+                    // ログイン成功
+                    document.getElementById('login-form').style.display = 'none';
+                    document.getElementById('overlay').style.display = 'none';
+                    document.getElementById('server-management').style.display = 'block';
+                    document.getElementById('taskbar').style.display = 'flex';
 
-                if (data.type === "server_status") {
-                    updateServerStatus(data.data);
-                } else if (data.type === "processes") {
-                    updateProcesses(data.data);
-                } else if (data.type === "console_log") {
-                    const consoleOutput = document.getElementById('console-output');
-                    const logMessage = document.createElement('p');
-                    logMessage.textContent = data.data;
-                    consoleOutput.appendChild(logMessage);
-                    updateConsoleLog(data.data);
-                } else if (data.type === "command_result") {
-                    document.getElementById('command-result').textContent = data.data.message;
-                }  else if (data.type === "resources") {
-      updateResourceMonitor(data.data);
-  
-                    
+                    const pusher = new Pusher('b7ac1ff8c001c16fab67', {
+                        cluster: 'ap3',
+                        authEndpoint: '/pusher/auth'
+                    });
+
+                    const channel = pusher.subscribe('private-my-channel');
+
+
+                    channel.bind('pusher:subscription_succeeded', () => {
+                        console.log('Pusher: Subscribed to private-my-channel');
+
+                        // チャンネル登録成功後にデータ取得のリクエストを送信
+                        getServerStatus();
+                        getResources(); // リソース情報を取得
+
+                    });
+
+                    channel.bind('server_status', (data) => {
+                        console.log('Received server status:', data); // デバッグログを追加
+                        updateServerStatus(data.data);
+                    });
+
+                    channel.bind('resources', (data) => {
+                        console.log('Received resources:', data); // デバッグログを追加
+                        updateResourceMonitor(data);
+                    });
+
+                    channel.bind('console_log', (data) => { // イベント名を修正
+                        console.log('Received console log:', data); // デバッグログを追加
+                        updateConsoleLog(data);
+                    });
+                   
+
+                } else {
+                    document.getElementById('error-message').textContent = 'パスワードが間違っています。';
                 }
-            };
-
-        } else {
-            document.getElementById('error-message').textContent = 'パスワードが間違っています。';
-        }
-    } catch (error) {
-        console.error(error);
-        document.getElementById('error-message').textContent = 'エラーが発生しました。';
-    }
-}
-
-    // ウィンドウをドラッグで移動可能にする関数
-function dragElement(elmnt) {
-    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-    let isDragging = false; // ドラッグ中かどうかを示すフラグ
-
-    // タッチイベントとマウスイベントの両方に対応
-    elmnt.querySelector('.window-titlebar').addEventListener('mousedown', dragMouseDown);
-    elmnt.querySelector('.window-titlebar').addEventListener('touchstart', dragMouseDown);
-
-    function dragMouseDown(e) {
-        e = e || window.event;
-        e.preventDefault();
-
-        // タッチイベントの場合、最初のタッチポイントの座標を取得
-        if (e.type === 'touchstart') {
-            pos3 = e.touches[0].clientX;
-            pos4 = e.touches[0].clientY;
-        } else {
-            // マウスイベントの場合、通常の座標を取得
-            pos3 = e.clientX;
-            pos4 = e.clientY;
+            } catch (error) {
+                console.error(error);
+                document.getElementById('error-message').textContent = 'エラーが発生しました。';
+            }
         }
 
-        isDragging = true; // ドラッグ開始
+        // ウィンドウをドラッグで移動可能にする関数
+        function dragElement(elmnt) {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            let isDragging = false; // ドラッグ中かどうかを示すフラグ
 
-        // タッチイベントとマウスイベントの両方に対応
-        document.addEventListener('mouseup', closeDragElement);
-        document.addEventListener('touchend', closeDragElement);
-        document.addEventListener('mousemove', elementDrag);
-        document.addEventListener('touchmove', elementDrag);
-    }
+            // タッチイベントとマウスイベントの両方に対応
+            elmnt.querySelector('.window-titlebar').addEventListener('mousedown', dragMouseDown);
+            elmnt.querySelector('.window-titlebar').addEventListener('touchstart', dragMouseDown);
 
-    function elementDrag(e) {
-        if (!isDragging) return; // ドラッグ中でない場合は処理しない
+            function dragMouseDown(e) {
+                e = e || window.event;
+                e.preventDefault();
 
-        e = e || window.event;
-        e.preventDefault();
+                // タッチイベントの場合、最初のタッチポイントの座標を取得
+                if (e.type === 'touchstart') {
+                    pos3 = e.touches[0].clientX;
+                    pos4 = e.touches[0].clientY;
+                } else {
+                    // マウスイベントの場合、通常の座標を取得
+                    pos3 = e.clientX;
+                    pos4 = e.clientY;
+                }
 
-        // タッチイベントの場合、最初のタッチポイントの座標を取得
-        if (e.type === 'touchmove') {
-            pos1 = pos3 - e.touches[0].clientX;
-            pos2 = pos4 - e.touches[0].clientY;
-            pos3 = e.touches[0].clientX;
-            pos4 = e.touches[0].clientY;
-        } else {
-            // マウスイベントの場合、通常の座標を取得
-            pos1 = pos3 - e.clientX;
-            pos2 = pos4 - e.clientY;
-            pos3 = e.clientX;
-            pos4 = e.clientY;
+                isDragging = true; // ドラッグ開始
+
+                // タッチイベントとマウスイベントの両方に対応
+                document.addEventListener('mouseup', closeDragElement);
+                document.addEventListener('touchend', closeDragElement);
+                document.addEventListener('mousemove', elementDrag);
+                document.addEventListener('touchmove', elementDrag);
+            }
+
+            function elementDrag(e) {
+                if (!isDragging) return; // ドラッグ中でない場合は処理しない
+
+                e = e || window.event;
+                e.preventDefault();
+
+                // タッチイベントの場合、最初のタッチポイントの座標を取得
+                if (e.type === 'touchmove') {
+                    pos1 = pos3 - e.touches[0].clientX;
+                    pos2 = pos4 - e.touches[0].clientY;
+                    pos3 = e.touches[0].clientX;
+                    pos4 = e.touches[0].clientY;
+                } else {
+                    // マウスイベントの場合、通常の座標を取得
+                    pos1 = pos3 - e.clientX;
+                    pos2 = pos4 - e.clientY;
+                    pos3 = e.clientX;
+                    pos4 = e.clientY;
+                }
+
+                // 要素の位置を更新
+                elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+                elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+            }
+
+            function closeDragElement() {
+                isDragging = false; // ドラッグ終了
+
+                // イベントリスナーを削除
+                document.removeEventListener('mouseup', closeDragElement);
+                document.removeEventListener('touchend', closeDragElement);
+                document.removeEventListener('mousemove', elementDrag);
+                document.removeEventListener('touchmove', elementDrag);
+            }
         }
-
-        // 要素の位置を更新
-        elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
-        elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
-    }
-
-    function closeDragElement() {
-        isDragging = false; // ドラッグ終了
-
-        // イベントリスナーを削除
-        document.removeEventListener('mouseup', closeDragElement);
-        document.removeEventListener('touchend', closeDragElement);
-        document.removeEventListener('mousemove', elementDrag);
-        document.removeEventListener('touchmove', elementDrag);
-    }
-}
 
 
         // ウィンドウを開く関数
-// ウィンドウを開く関数
-function openWindow(windowId) {
-    const appWindow = document.getElementById(windowId); // アプリケーションウィンドウの要素
-    appWindow.style.display = 'block';
+        // ウィンドウを開く関数
+        function openWindow(windowId) {
+            const appWindow = document.getElementById(windowId); // アプリケーションウィンドウの要素
+            appWindow.style.display = 'block';
 
-    // ウィンドウの初期サイズを画面サイズに合わせて調整
-    const screenWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
-    const screenHeight = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+            // ウィンドウの初期サイズを画面サイズに合わせて調整
+            const screenWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+            const screenHeight = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
 
-    // ウィンドウの幅を画面幅の80%、高さを画面高さの60%に設定 (必要に応じて調整)
-    appWindow.style.width = Math.floor(screenWidth * 0.8) + 'px';
-    appWindow.style.height = Math.floor(screenHeight * 0.6) + 'px';
+            // ウィンドウの幅を画面幅の80%、高さを画面高さの60%に設定 (必要に応じて調整)
+            appWindow.style.width = Math.floor(screenWidth * 0.8) + 'px';
+            appWindow.style.height = Math.floor(screenHeight * 0.6) + 'px';
 
-    // ウィンドウの位置を画面中央に設定
-    appWindow.style.top = Math.floor((screenHeight - appWindow.offsetHeight) / 2) + 'px';
-    appWindow.style.left = Math.floor((screenWidth - appWindow.offsetWidth) / 2) + 'px';
-}
-
-    // ウィンドウを閉じる関数
-    function closeWindow(windowId) {
-        document.getElementById(windowId).style.display = 'none';
-        // ログインフォームとオーバーレイを表示
-       // document.getElementById('login-form').style.display = 'block';
-       // document.getElementById('overlay').style.display = 'block';
-    }
-
-    // タブ切り替え関数
-    function openTab(evt, tabName) {
-        let i, tabcontent, tablinks;
-        tabcontent = document.getElementsByClassName("tabcontent");
-        for (i = 0; i < tabcontent.length; i++) {
-            tabcontent[i].style.display = "none";
+            // ウィンドウの位置を画面中央に設定
+            appWindow.style.top = Math.floor((screenHeight - appWindow.offsetHeight) / 2) + 'px';
+            appWindow.style.left = Math.floor((screenWidth - appWindow.offsetWidth) / 2) + 'px';
         }
-        tablinks = document.getElementsByClassName("tablinks");
-        for (i = 0; i < tablinks.length; i++) {
-            tablinks[i].className = tablinks[i].className.replace(" active", "");
+
+        // ウィンドウを閉じる関数
+        function closeWindow(windowId) {
+            document.getElementById(windowId).style.display = 'none';
+            // ログインフォームとオーバーレイを表示
+            // document.getElementById('login-form').style.display = 'block';
+            // document.getElementById('overlay').style.display = 'block';
         }
-        document.getElementById(tabName).style.display = "block";
-        evt.currentTarget.className += " active";
-    }
 
-    // サーバー情報の取得
-            function getServerStatus() {
-                ws.send(JSON.stringify({ command: "get_server_status" }));
+        // タブ切り替え関数
+        function openTab(evt, tabName) {
+            let i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
             }
-
-            // プロセス一覧の取得
-            function getProcesses() {
-                ws.send(JSON.stringify({ command: "get_processes" }));
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
             }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
 
-            // コンソールログの取得
-            function getConsoleLog() {
-                ws.send(JSON.stringify({ command: "get_console_log" }));
-            }
+        // サーバー情報の取得
+        function getServerStatus() {
+            ws.send(JSON.stringify({ command: "get_server_status" }));
+        }
 
-            // サーバー情報の更新
-            function updateServerStatus(data) {
-                let statusHTML = '';
-                for (const [key, value] of Object.entries(data)) {
-                    if (key === "ネットワーク情報") {
-                        let displayValue = JSON.stringify(value, null, 2); // 整形して表示
-                        statusHTML += `<p><strong>${key}:</strong></p><pre>${displayValue}</pre>`;
-                    } else {
-                        statusHTML += `<p><strong>${key}:</strong> ${value}</p>`;
-                    }
+        // プロセス一覧の取得
+        function getProcesses() {
+            ws.send(JSON.stringify({ command: "get_processes" }));
+        }
+
+        // コンソールログの取得
+        function getConsoleLog() {
+            ws.send(JSON.stringify({ command: "get_console_log" }));
+        }
+
+        // サーバー情報の更新
+        function updateServerStatus(data) {
+            let statusHTML = '';
+            for (const [key, value] of Object.entries(data)) {
+                if (key === "ネットワーク情報") {
+                    let displayValue = JSON.stringify(value, null, 2); // 整形して表示
+                    statusHTML += `<p><strong>${key}:</strong></p><pre>${displayValue}</pre>`;
+                } else {
+                    statusHTML += `<p><strong>${key}:</strong> ${value}</p>`;
                 }
-                document.getElementById('server-status-content').innerHTML = statusHTML;
             }
-
-            // プロセス一覧の更新
-            function updateProcesses(data) {
-                document.getElementById('processes-list').textContent = data.processes;
-            }
-
-            // コンソールログの更新
-            function updateConsoleLog(data) {
-                document.getElementById('console-output').textContent = data.console_log.join('');
-            }
-
-    // BAN履歴の更新
-    async function updateBanHistory() {
-        try {
-            const response = await fetch('/antibot/history');
-            const data = await response.json();
-
-            document.getElementById('banned-count').textContent = data.bannedCount;
-            const banHistoryTable = document.getElementById('ban-history').querySelector('tbody');
-            banHistoryTable.innerHTML = ''; // テーブルをクリア
-
-            data.banHistory.forEach(ban => {
-                const row = banHistoryTable.insertRow();
-                row.insertCell().textContent = ban.user_id;
-                row.insertCell().textContent = ban.ban_time;
-
-                const unbanButton = document.createElement('button');
-                unbanButton.textContent = '解除';
-                unbanButton.classList.add('button');
-                unbanButton.addEventListener('click', () => {
-                    unbanUser(ban.user_id);
-                });
-                row.insertCell().appendChild(unbanButton);
-            });
-        } catch (error) {
-            console.error(error);
+            document.getElementById('server-status-content').innerHTML = statusHTML;
         }
-    }
 
-    // ユーザーのBAN解除
-    async function unbanUser(userId) {
-        try {
-            const response = await fetch('/antibot/unban', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ user_id: userId })
-            });
-
-            if (response.ok) {
-                updateBanHistory();
-            } else {
-                console.error('ユーザーのBAN解除に失敗しました。');
-            }
-        } catch (error) {
-            console.error(error);
+        // プロセス一覧の更新
+        function updateProcesses(data) {
+            document.getElementById('processes-list').textContent = data.processes;
         }
-    }
 
-    // サーバーの再起動
-    async function restartServer() {
-        try {
-            const response = await fetch('/admin/restart', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ password: document.getElementById('password').value })
-            });
-
-            if (response.ok) {
-                console.log('サーバーの再起動リクエストを送信しました。');
-            } else {
-                console.error('サーバーの再起動に失敗しました。');
+        // コンソールログの更新
+        function updateConsoleLog(data) {
+                console.log("Updating console log with:", data); // デバッグログを追加
+                if (data.console_log && Array.isArray(data.console_log)) {
+                    document.getElementById('console-output').textContent = data.console_log.join('\n'); // 配列を改行で結合
+                } else {
+                    console.error("Invalid console log data:", data); // 無効なデータの場合のエラー処理
+                }
             }
-        } catch (error) {
-            console.error(error);
-        }
-    }
 
-    // サーバーのシャットダウン
-    async function shutdownServer() {
-        if (!confirm('本当にサーバーをシャットダウンしますか？')) return;
-        try {
-            const response = await fetch('/admin/shutdown', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ password: document.getElementById('password').value })
-            });
-
-            if (response.ok) {
-                console.log('サーバーのシャットダウンリクエストを送信しました。');
-            } else {
-                console.error('サーバーのシャットダウンに失敗しました。');
-            }
-        } catch (error) {
-            console.error(error);
-        }
-    }
-
-    // ファイル/フォルダの名前変更
-    document.getElementById('rename-form').addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const oldName = document.getElementById('old-name').value;
-        const newName = document.getElementById('new-name').value;
-
-        try {
-            const response = await fetch('/admin', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ rename: { old_name: oldName, new_name: newName }, password: document.getElementById('password').value })
-            });
-
-            if (response.ok) {
+        // BAN履歴の更新
+        async function updateBanHistory() {
+            try {
+                const response = await fetch('/antibot/history');
                 const data = await response.json();
-                document.getElementById('rename-result').textContent = data.message;
-            } else {
+
+                document.getElementById('banned-count').textContent = data.bannedCount;
+                const banHistoryTable = document.getElementById('ban-history').querySelector('tbody');
+                banHistoryTable.innerHTML = ''; // テーブルをクリア
+
+                data.banHistory.forEach(ban => {
+                    const row = banHistoryTable.insertRow();
+                    row.insertCell().textContent = ban.user_id;
+                    row.insertCell().textContent = ban.ban_time;
+
+                    const unbanButton = document.createElement('button');
+                    unbanButton.textContent = '解除';
+                    unbanButton.classList.add('button');
+                    unbanButton.addEventListener('click', () => {
+                        unbanUser(ban.user_id);
+                    });
+                    row.insertCell().appendChild(unbanButton);
+                });
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        // ユーザーのBAN解除
+        async function unbanUser(userId) {
+            try {
+                const response = await fetch('/antibot/unban', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ user_id: userId })
+                });
+
+                if (response.ok) {
+                    updateBanHistory();
+                } else {
+                    console.error('ユーザーのBAN解除に失敗しました。');
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        function getServerStatus() {
+            fetch('/admin/status', { // POSTリクエストに変更
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ password: document.getElementById('password').value })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.data) { // data.data をチェック
+                        updateServerStatus(data.data);
+                    } else {
+                        console.error("サーバー情報の取得に失敗しました:", data); // エラーメッセージを表示
+                    }
+                })
+                .catch(error => {
+                    console.error("サーバー情報の取得中にエラーが発生しました:", error);
+                });
+        }
+
+        // サーバーの再起動
+        async function restartServer() {
+            try {
+                const response = await fetch('/admin/restart', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ password: document.getElementById('password').value })
+                });
+
+                if (response.ok) {
+                    console.log('サーバーの再起動リクエストを送信しました。');
+                } else {
+                    console.error('サーバーの再起動に失敗しました。');
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        // サーバーのシャットダウン
+        async function shutdownServer() {
+            if (!confirm('本当にサーバーをシャットダウンしますか？')) return;
+            try {
+                const response = await fetch('/admin/shutdown', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ password: document.getElementById('password').value })
+                });
+
+                if (response.ok) {
+                    console.log('サーバーのシャットダウンリクエストを送信しました。');
+                } else {
+                    console.error('サーバーのシャットダウンに失敗しました。');
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        // ファイル/フォルダの名前変更
+        document.getElementById('rename-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const oldName = document.getElementById('old-name').value;
+            const newName = document.getElementById('new-name').value;
+
+            try {
+                const response = await fetch('/admin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ rename: { old_name: oldName, new_name: newName }, password: document.getElementById('password').value })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('rename-result').textContent = data.message;
+                } else {
+                    document.getElementById('rename-result').textContent = 'エラーが発生しました。';
+                }
+            } catch (error) {
+                console.error(error);
                 document.getElementById('rename-result').textContent = 'エラーが発生しました。';
             }
-        } catch (error) {
-            console.error(error);
-            document.getElementById('rename-result').textContent = 'エラーが発生しました。';
-        }
-    });
-
-    // ファイルの表示
-document.getElementById('show-form').addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const showFilename = document.getElementById('show-file').value;
-    const password = document.getElementById('password').value;
-
-    try {
-        const response = await fetch('/admin/showfile', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ file_name: showFilename, password: password })
         });
 
-        if (response.ok) {
-            const fileContent = await response.text();
-            const formattedContent = fileContent.replace(/\n/g, '<br>'); // 改行コードを <br> タグに変換
-            document.getElementById('show-result').innerHTML = formattedContent; // innerHTML を使用して HTML として設定
-        } else {
-            const errorData = await response.json();
-            document.getElementById('show-result').textContent = errorData.error;
-        }
+        // ファイルの表示
+        document.getElementById('show-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const showFilename = document.getElementById('show-file').value;
+            const password = document.getElementById('password').value;
 
-    } catch (error) {
-        console.error(error);
-        document.getElementById('show-result').textContent = 'エラーが発生しました。';
-    }
-});
+            try {
+                const response = await fetch('/admin/showfile', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ file_name: showFilename, password: password })
+                });
 
-    // BAN解除フォームの送信イベント
-    document.getElementById('unban-form').addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const userId = document.getElementById('user-id').value;
-        await unbanUser(userId);
-    });
+                if (response.ok) {
+                    const fileContent = await response.text();
+                    const formattedContent = fileContent.replace(/\n/g, '<br>'); // 改行コードを <br> タグに変換
+                    document.getElementById('show-result').innerHTML = formattedContent; // innerHTML を使用して HTML として設定
+                } else {
+                    const errorData = await response.json();
+                    document.getElementById('show-result').textContent = errorData.error;
+                }
 
-    // JSON更新フォームの送信イベント
-document.getElementById('update-json-form').addEventListener('submit', async (event) => {
-    event.preventDefault();
-
-    const filePath = document.getElementById('json-file-path').value;
-    const jsonData = document.getElementById('json-data').value;
-    const password = document.getElementById('password').value;
-
-    try {
-        const response = await fetch('/admin/update_json', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ 
-                password: password,
-                file_path: filePath, // file_path を追加
-                data: JSON.parse(jsonData) // data を追加
-            })
+            } catch (error) {
+                console.error(error);
+                document.getElementById('show-result').textContent = 'エラーが発生しました。';
+            }
         });
 
-        if (response.ok) {
-            const data = await response.json();
-            document.getElementById('update-json-result').textContent = data.message;
-        } else {
-            document.getElementById('update-json-result').textContent = 'エラーが発生しました。';
-        }
-    } catch (error) {
-        console.error(error);
-        document.getElementById('update-json-result').textContent = 'エラーが発生しました。';
-    }
-});
+        // BAN解除フォームの送信イベント
+        document.getElementById('unban-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const userId = document.getElementById('user-id').value;
+            await unbanUser(userId);
+        });
 
-    function openWebBrowser(url) {
+        // JSON更新フォームの送信イベント
+        document.getElementById('update-json-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const filePath = document.getElementById('json-file-path').value;
+            const jsonData = document.getElementById('json-data').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch('/admin/update_json', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        password: password,
+                        file_path: filePath, // file_path を追加
+                        data: JSON.parse(jsonData) // data を追加
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('update-json-result').textContent = data.message;
+                } else {
+                    document.getElementById('update-json-result').textContent = 'エラーが発生しました。';
+                }
+            } catch (error) {
+                console.error(error);
+                document.getElementById('update-json-result').textContent = 'エラーが発生しました。';
+            }
+        });
+
+        function openWebBrowser(url) {
             const webBrowserWindow = document.getElementById('web-browser-window');
             const webBrowserIframe = document.getElementById('web-browser-iframe');
             webBrowserIframe.src = url; // iframe の src 属性を設定
             webBrowserWindow.style.display = 'block';
         }
 
-    // サーバー停止
-            document.getElementById('stop-server-form').addEventListener('submit', async (event) => {
-                event.preventDefault();
-                try {
-                    const response = await fetch('/admin/update_server_status', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        },
-                        body: `status=stop&password=${document.getElementById('password').value}`
-                    });
-                    if (response.ok) {
-                        alert("サーバーを停止しました。");
-                        getServerStatus(); // WebSocket でステータス情報を更新
-                    } else {
-                        alert("サーバーの停止に失敗しました。");
-                    }
-                } catch (error) {
-                    console.error(error);
-                    alert("サーバーの停止中にエラーが発生しました。");
+        // サーバー停止
+        document.getElementById('stop-server-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            try {
+                const response = await fetch('/admin/update_server_status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: `status=stop&password=${document.getElementById('password').value}`
+                });
+                if (response.ok) {
+                    alert("サーバーを停止しました。");
+                    getServerStatus(); // WebSocket でステータス情報を更新
+                } else {
+                    alert("サーバーの停止に失敗しました。");
                 }
-            });
+            } catch (error) {
+                console.error(error);
+                alert("サーバーの停止中にエラーが発生しました。");
+            }
+        });
 
-            // サーバー起動
-            document.getElementById('start-server-form').addEventListener('submit', async (event) => {
-                event.preventDefault();
-                try {
-                    const response = await fetch('/admin/update_server_status', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        },
-                        body: `status=start&password=${document.getElementById('password').value}`
-                    });
-                    if (response.ok) {
-                        alert("サーバーを起動しました。");
-                        getServerStatus(); // WebSocket でステータス情報を更新
-                    } else {
-                        alert("サーバーの起動に失敗しました。");
-                    }
-                } catch (error) {
-                    console.error(error);
-                    alert("サーバーの起動中にエラーが発生しました。");
+        // サーバー起動
+        document.getElementById('start-server-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            try {
+                const response = await fetch('/admin/update_server_status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: `status=start&password=${document.getElementById('password').value}`
+                });
+                if (response.ok) {
+                    alert("サーバーを起動しました。");
+                    getServerStatus(); // WebSocket でステータス情報を更新
+                } else {
+                    alert("サーバーの起動に失敗しました。");
                 }
-            });
+            } catch (error) {
+                console.error(error);
+                alert("サーバーの起動中にエラーが発生しました。");
+            }
+        });
 
-    function getResources() {
-    ws.send(JSON.stringify({ command: "get_resources" }));
-}
+        function getResources() {
+            
+        }
 
-// リソース情報の更新
-function updateResourceMonitor(data) {
-  // ここにチャート描画ライブラリを用いた処理を追加
-  // 例：CPU使用率を円グラフで表示
-  drawChart('cpu-usage', 'CPU使用率', [data.cpu_usage, 100 - data.cpu_usage]);
-  // 例：メモリ使用率をプログレスバーで表示
-  drawChart('memory-usage', 'メモリ使用率', [data.memory_usage, 100 - data.memory_usage]);
-}
-setInterval(getResources, 2000);
+        // リソース情報の更新
+        function updateResourceMonitor(data) {
+            // ここにチャート描画ライブラリを用いた処理を追加
+            // 例：CPU使用率を円グラフで表示
+            drawChart('cpu-usage', 'CPU使用率', [data.cpu_usage, 100 - data.cpu_usage]);
+            // 例：メモリ使用率をプログレスバーで表示
+            drawChart('memory-usage', 'メモリ使用率', [data.memory_usage, 100 - data.memory_usage]);
+        }
+        setInterval(getResources, 2000);
 
-// チャート描画関数（ダミー、実際のライブラリに置き換えてください）
-function drawChart(elementId, title, data) {
-    document.getElementById(elementId).innerHTML = `
+        // チャート描画関数（ダミー、実際のライブラリに置き換えてください）
+        function drawChart(elementId, title, data) {
+            document.getElementById(elementId).innerHTML = `
         <h3>${title}</h3>
         <p>使用率: ${data[0]}%</p>
     `;
-}
+        }
 
-  // 電卓のJavaScript関数
-let currentInput = '';
-let previousInput = '';
-let currentOperator = '';
+        // 電卓のJavaScript関数
+        let currentInput = '';
+        let previousInput = '';
+        let currentOperator = '';
 
-function appendToDisplay(value) {
-    currentInput += value;
-    document.getElementById('display').value = currentInput;
-}
+        function appendToDisplay(value) {
+            currentInput += value;
+            document.getElementById('display').value = currentInput;
+        }
 
-function inputDigit(digit) {
-    if (currentInput === '0') {
-        currentInput = digit;
-    } else {
-        currentInput += digit;
-    }
-    updateDisplay();
-}
-
-function inputOperator(operator) {
-    if (currentOperator !== '') {
-        calculate();
-    }
-    previousInput = currentInput;
-    currentOperator = operator;
-    currentInput = '';
-}
-
-function inputDecimal() {
-    if (!currentInput.includes('.')) {
-        currentInput += '.';
-    }
-    updateDisplay();
-}
-
-function clearDisplay() {
-    currentInput = '';
-    previousInput = '';
-    currentOperator = '';
-    updateDisplay();
-}
-
-function calculate() {
-    let result;
-    const prev = parseFloat(previousInput);
-    const current = parseFloat(currentInput);
-    if (isNaN(prev) || isNaN(current)) return;
-    switch (currentOperator) {
-        case '+':
-            result = prev + current;
-            break;
-        case '-':
-            result = prev - current;
-            break;
-        case '*':
-            result = prev * current;
-            break;
-        case '/':
-            if (current === 0) {
-                alert('0で割ることはできません。');
-                return;
+        function inputDigit(digit) {
+            if (currentInput === '0') {
+                currentInput = digit;
+            } else {
+                currentInput += digit;
             }
-            result = prev / current;
-            break;
-        default:
-            return;
-    }
-    currentInput = result.toString();
-    previousInput = '';
-    currentOperator = '';
-    updateDisplay();
-}
+            updateDisplay();
+        }
 
-function updateDisplay() {
-    document.getElementById('display').value = currentInput;
-}
+        function inputOperator(operator) {
+            if (currentOperator !== '') {
+                calculate();
+            }
+            previousInput = currentInput;
+            currentOperator = operator;
+            currentInput = '';
+        }
 
-// 時計のJavaScript関数
-function updateClock() {
-    const now = new Date();
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
-    document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
-}
-setInterval(updateClock, 1000);
+        function inputDecimal() {
+            if (!currentInput.includes('.')) {
+                currentInput += '.';
+            }
+            updateDisplay();
+        }
+
+        function clearDisplay() {
+            currentInput = '';
+            previousInput = '';
+            currentOperator = '';
+            updateDisplay();
+        }
+
+        function calculate() {
+            let result;
+            const prev = parseFloat(previousInput);
+            const current = parseFloat(currentInput);
+            if (isNaN(prev) || isNaN(current)) return;
+            switch (currentOperator) {
+                case '+':
+                    result = prev + current;
+                    break;
+                case '-':
+                    result = prev - current;
+                    break;
+                case '*':
+                    result = prev * current;
+                    break;
+                case '/':
+                    if (current === 0) {
+                        alert('0で割ることはできません。');
+                        return;
+                    }
+                    result = prev / current;
+                    break;
+                default:
+                    return;
+            }
+            currentInput = result.toString();
+            previousInput = '';
+            currentOperator = '';
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            document.getElementById('display').value = currentInput;
+        }
+
+        // 時計のJavaScript関数
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
+        }
+        setInterval(updateClock, 1000);
 
 
-// メモ帳の保存機能
-function saveNotepad() {
-    const notepadContent = document.getElementById('notepad-textarea').value;
-    localStorage.setItem('notepadContent', notepadContent);
-    alert('メモ帳が保存されました。');
-}
+        // メモ帳の保存機能
+        function saveNotepad() {
+            const notepadContent = document.getElementById('notepad-textarea').value;
+            localStorage.setItem('notepadContent', notepadContent);
+            alert('メモ帳が保存されました。');
+        }
 
-// メモ帳の読み込み (ページ読み込み時に実行)
-window.addEventListener('load', () => {
-    const savedContent = localStorage.getItem('notepadContent');
-    if (savedContent) {
-        document.getElementById('notepad-textarea').value = savedContent;
-    }
-});
+        // メモ帳の読み込み (ページ読み込み時に実行)
+        window.addEventListener('load', () => {
+            const savedContent = localStorage.getItem('notepadContent');
+            if (savedContent) {
+                document.getElementById('notepad-textarea').value = savedContent;
+            }
+        });
 
 
- 
-</script>
+
+    </script>
 
 </body>
+
 </html>
