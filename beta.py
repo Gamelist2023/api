@@ -677,8 +677,7 @@ async def stream(request: Request):
         return StreamingResponse(iter([f"data: {json.dumps({'response': escape('Invalid provider specified')})}"]),media_type="text/event-stream")
 
 
-GENERATED_IMAGES_DIR = Path("./generated_images")
-GENERATED_IMAGES_DIR.mkdir(exist_ok=True)
+
 
 
 
@@ -709,46 +708,18 @@ async def generate_image(request: Request,token: str, prompt: Optional[str] = No
     if prompt is None:
         return JSONResponse(content={"error": "No prompt provided"}, status_code=400)
 
-    cookies_dir = os.path.join(os.path.dirname(__file__), "har")
-    client = g4f.AsyncClient(api_key=read_cookie_files(cookies_dir),response_format='b64_json')
-    try:
-        response = await client.images.generate(
-            prompt=prompt,
-            model="dall-e-3",
-            response_format='b64_json'
-        )
+    bing_art = BingArt(auth_cookie_U=Token, auth_cookie_KievRPSSecAuth=Kiev_cookies)
+    results = bing_art.generate_images(prompt)
 
-        if 'error' in response:
-            raise HTTPException(status_code=500, detail=response['error'])
+    # 画像URLをbase64に変換
+    images_base64 = []
+    for image in results['images']:
+        response = requests.get(image['url'])
+        image_base64 = base64.b64encode(response.content).decode('utf-8')
+        images_base64.append(image_base64)
 
-
-        image_data_list = []
-        try:
-             image_data_list.append(response.data[0]['b64_json'])
-             image_data_list.append(response.data[1]['b64_json'])
-             image_data_list.append(response.data[2]['b64_json'])
-             image_data_list.append(response.data[3]['b64_json'])
-        except (IndexError, KeyError) as e:
-             print(f"Error accessing image data: {e}")
-
-
-
-        response_data = {"images": image_data_list}
-        clear_generated_images_dir()
-
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        return JSONResponse(content={"error": str(e)}, status_code=500)
-
-    # 最後のコメントを更新 (成功した場合のみ)
-    last_prompt[user_id] = prompt
-
-    return JSONResponse(content=response_data)
-
-
-def clear_generated_images_dir():
-    for file in GENERATED_IMAGES_DIR.glob("*"):  # 全てのファイルを対象
-        file.unlink()
+    # base64に変換した画像を含むJSONを返す
+    return JSONResponse(content={"images": images_base64})
 
 
 def clear_log():

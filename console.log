@@ -1,39 +1,6 @@
 INFO:     Will watch for changes in these directories: ['C:\\Users\\issei\\Documents\\Dev\\api']
 INFO:     Uvicorn running on http://0.0.0.0:5000 (Press CTRL+C to quit)
-INFO:     Started reloader process [7556] using StatReload
-INFO:     Started server process [24944]
+INFO:     Started reloader process [4052] using StatReload
+INFO:     Started server process [16504]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
-None
-INFO:     127.0.0.1:33699 - "GET / HTTP/1.1" 200 OK
-C:\Users\issei\AppData\Local\Programs\Python\Python312\Lib\asyncio\events.py:88: UserWarning: Curlm alread closed! quitting from process_data
-  self._context.run(self._callback, *self._args)
-Read .har file: C:\Users\issei\Documents\Dev\api\har\.bing.com.har
-Read .har file: C:\Users\issei\Documents\Dev\api\har\chatgpt.com.har
-Read .har file: C:\Users\issei\Documents\Dev\api\har\gemini.google.com.har
-Read .har file: C:\Users\issei\Documents\Dev\api\har\huggingface.co.har
-Read cookie file: C:\Users\issei\Documents\Dev\api\har\bing.com.json
-Cookies added: 23 from .bing.com
-Cookies added: 2 from www.bing.com
-Read cookie file: C:\Users\issei\Documents\Dev\api\har\chatgpt.com.json
-Cookies added: 4 from .chatgpt.com
-Cookies added: 9 from chatgpt.com
-Read cookie file: C:\Users\issei\Documents\Dev\api\har\gemini.google.com.json
-Cookies added: 17 from .google.com
-Cookies added: 3 from .gemini.google.com
-Read cookie file: C:\Users\issei\Documents\Dev\api\har\huggingface.co.json
-Cookies added: 3 from .huggingface.co
-Cookies added: 2 from huggingface.co
-Read cookie file: C:\Users\issei\Documents\Dev\api\har\rika.json
-Cookies added: 1 from chat.reka.ai
-Copilot: No access token found in .har files
-Image provider CopilotAccount: No access token found in .har files
-Arkose: False
-Proofofwork: gAAAAABWzI1M...
-AccessToken: eyJhbGciOiJS...
-OpenaiChat: New conversation: 67510c1c-d144-8006-a1ae-05ef30e8ad25
-MicrosoftDesigner: No access token found in .har files
-Image provider MicrosoftDesigner: No access token found in .har files
-An error occurred: No coins left. Log in with a different account or wait a while
-INFO:     127.0.0.1:33699 - "GET /generate_image?token=AI010a340d-5142-4aa4-8007-294d692f2f18&prompt=cat%0A HTTP/1.1" 500 Internal Server Error
-WARNING:  StatReload detected changes in 'beta.py'. Reloading...
