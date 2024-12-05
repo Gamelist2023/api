@@ -4,3 +4,6 @@ INFO:     Started reloader process [4052] using StatReload
 INFO:     Started server process [16504]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
+None
+INFO:     127.0.0.1:58899 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58899 - "GET /generate_image?token=AI010a340d-5142-4aa4-8007-294d692f2f18&prompt=cgat%0A HTTP/1.1" 200 OK
