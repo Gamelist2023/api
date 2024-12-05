@@ -1101,13 +1101,15 @@ async def periodic_resource_update():
     while True:
         await get_system_resources_async()
         await admin_status_server()
-        await asyncio.sleep(2)  # 2秒ごとに更新
+        await asyncio.sleep(2)  
 
 
+
+@app.on_event("startup")
 
 async def startup_event():
     asyncio.create_task(periodic_resource_update())
-# Pusher のインスタンスを作成
+
 pusher_client = Pusher(
   app_id="1906477",
   key="b7ac1ff8c001c16fab67",
