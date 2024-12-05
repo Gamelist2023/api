@@ -138,7 +138,7 @@ def home(request: Request):
 
 geminis = {}
 
-async def ask(user_id: str, prompt: str,system: str,token: str):
+async def ask(user_id: str, prompt: str,system: str):
     # ユーザー識別子がなければUUIDで新たに作成
     if not user_id:
         user_id = str(uuid.uuid4())
@@ -160,11 +160,11 @@ async def ask(user_id: str, prompt: str,system: str,token: str):
 
     try:
         client = AsyncClient(
-            provider=g4f.Provider.DeepInfra,
+            provider=g4f.Provider.DeepInfraChat,
             api_key="JhB5e55aNwzuAKFawXKF47VuGmCWQ3CS",  # 正しい関数名に修正
         )
         response = await client.chat.completions.create(
-            model="meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo",
+            model="nvidia/Llama-3.1-Nemotron-70B-Instruct",
             messages=UseSystem+conversation_history,
         )
         add_ai_response_to_history(user_id, response.choices[0].message.content)
@@ -178,7 +178,7 @@ async def ask(user_id: str, prompt: str,system: str,token: str):
 
 
 
-async def random(user_id: str, prompt: str):
+async def AI2(user_id: str, prompt: str):
     # ユーザー識別子がなければUUIDで新たに作成
     if not user_id:
         user_id = str(uuid.uuid4())
@@ -195,29 +195,16 @@ async def random(user_id: str, prompt: str):
 
     try:
         client = AsyncClient(
-            provider=g4f.Provider.Reka,
+            provider=g4f.Provider.Copilot,
         )
         response = await client.chat.completions.create(
-            model="default",
+            model=g4f.models.default,
             messages=[{"role": "user", "content": prompt}],
         )
         return response.choices[0].message.content  # 正常な応答を返す
     except Exception as e:
-        logging.error(f"Error occurred: {str(e)}")
-        try:
-            # GeminiProが失敗した場合、Liaobotsを試す
-            client = AsyncClient(
-                provider=g4f.Provider.Copilot,
-            )
-            response = await client.chat.completions.create(
-                model="default",
-                messages=[{"role": "user", "content": prompt}],
-            )
-            add_ai_response_to_history(user_id, response.choices[0].message.content)
-            return response.choices[0].message.content  # Liaobotsからの正常な応答を返す
-        except Exception as e:
             logging.error(f"Error occurred: {str(e)}")
-            return "FreeNetflyとRekaの両方のプロバイダーでエラーが発生しました。他のプロバイダーを試してみてください"  # エラーメッセージを返す
+            return "Copliotの両方のプロバイダーでエラーが発生しました。他のプロバイダーを試してみてください"  # エラーメッセージを返す
 
 def add_ai_response_to_history(user_id, ai_response):
     conversation_history = conversation_histories.get(user_id, [])
@@ -303,23 +290,21 @@ async def delete_conversation_history():
 chatlist = {}  # 全ユーザーの会話履歴を保存する辞書
 
 
-async def Koala(user_id: str, prompt: str):
+async def AI6(user_id: str, prompt: str):
     # ユーザー識別子がなければUUIDで新たに作成
     if not user_id:
         user_id = str(uuid.uuid4())
 
     try:
-        client = AsyncClient(
-            provider=g4f.Provider.Koala,
-        )
+        client = AsyncClient()
         response = await client.chat.completions.create(
-            model="default",
+            model=g4f.models.gpt_4o_mini,
             messages=[{"role": "user", "content": prompt}],
         )
         return response.choices[0].message.content  # 正常な応答を返す
     except Exception as e:
         logging.error(f"Error occurred: {str(e)}")
-        return f"Koalaプロバイダーでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください"  # エラーメッセージを返す
+        return f"色々プロバイダーでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください"  # エラーメッセージを返す
 
 
 async def g4f_gemini(user_id: str, prompt: str,system: str):
@@ -343,16 +328,16 @@ async def g4f_gemini(user_id: str, prompt: str,system: str):
         return f"Geminiプロバイダーでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください"  # エラーメッセージを返す
 
 
-async def Ai4Chat(user_id: str, prompt: str):
+async def AI1(user_id: str, prompt: str):
     if not user_id:
         user_id = str(uuid.uuid4())
     try:
         client = AsyncClient(
-            provider=g4f.Provider.Pizzagpt,
+            provider=g4f.Provider.Reka,
             api_key=read_cookie_files(cookies_dir),
         )
         response = await client.chat.completions.create(
-                model="default",
+                model=g4f.models.default,
                 messages=[{"role": "user", "content": prompt}],
             )
 
@@ -364,14 +349,12 @@ async def Ai4Chat(user_id: str, prompt: str):
         return clean_response
     except Exception as e:
         logging.error(f"Error occurred: {str(e)}")
-        return f"Ai4Chatプロバイダーでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください追記：Rekaに関してはCookieの不具合の可能性が大なんで管理者に連絡してください"  # エラーメッセージを返す
+        return f"AI1プロバイダーでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください追記：Rekaに関してはCookieの不具合の可能性が大なんで管理者に連絡してください"  # エラーメッセージを返す
 
 
-async def lianocloud(user_id: str, prompt: str, system: str):
+async def AI4(user_id: str, prompt: str):
     if not user_id:
         user_id = str(uuid.uuid4())
-
-        systemmessage = f"System:{system} user:"
 
     try:
         client = AsyncClient(
@@ -380,7 +363,7 @@ async def lianocloud(user_id: str, prompt: str, system: str):
         )
         response = await client.chat.completions.create(
                 model="gpt-4o-mini",
-                messages=[{"role": "user", "content": systemmessage+prompt}],
+                messages=[{"role": "user", "content": prompt}],
             )
         return response.choices[0].message.content
     except Exception as e:
@@ -388,7 +371,7 @@ async def lianocloud(user_id: str, prompt: str, system: str):
         return f"You providerでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください"  # エラーメッセージを返す
 
 
-async def command_r(user_id: str, prompt: str, system: str):
+async def AI5(user_id: str, prompt: str, system: str):
     if not user_id:
         user_id = str(uuid.uuid4())
 
@@ -397,17 +380,18 @@ async def command_r(user_id: str, prompt: str, system: str):
     try:
         client = AsyncClient(
             provider=g4f.Provider.HuggingChat,
+            api_key=read_cookie_files(cookies_dir),
         )
         response = await client.chat.completions.create(
-                model="CohereForAI/c4ai-command-r-plus-08-2024",
+                model=g4f.models.default,
                 messages=[{"role": "user", "content": systemmessage+prompt}],
             )
         return response.choices[0].message.content
     except Exception as e:
         logging.error(f"Error occurred: {str(e)}")
-        return f"CohereForAI/c4ai-command-r-plus,modelでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください"  # エラーメッセージを返す
+        return f"nvidia Modelでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください"  # エラーメッセージを返す
 
-async def pizzagpt(user_id: str, prompt: str,):
+async def AI3(user_id: str, prompt: str,):
     if not user_id:
         user_id = str(uuid.uuid4())
         
@@ -426,7 +410,7 @@ async def pizzagpt(user_id: str, prompt: str,):
 
 
 
-AI_prompt = "あなたは優秀なAIですまたユーザーの言語で回答します"
+AI_prompt = "あなたはユーザーの言語で回答します"
 
 
 async def process_chat(provider: str, user_id: str, prompt: str, system: str = AI_prompt):
@@ -437,20 +421,20 @@ async def process_chat(provider: str, user_id: str, prompt: str, system: str = A
         response = await chat_with_OpenAI(user_id, prompt,system)
     elif provider == 'Gemini':
         response = await g4f_gemini(user_id, prompt,system)
-    elif provider == 'Random':
-        response = await random(user_id, prompt)
-    elif provider == 'Ai4Chat':
-        response = await Ai4Chat(user_id, prompt)
+    elif provider == 'Copilot':
+        response = await AI2(user_id, prompt)
+    elif provider == 'AI1':
+        response = await AI1(user_id, prompt)
     elif provider == "gpt4Mini":
-        response = await lianocloud(user_id, prompt, system)
+        response = await AI4(user_id, prompt)
     elif provider == "command_r":
-        response = await command_r(user_id, prompt, system)
+        response = await AI5(user_id, prompt, system)
     elif provider == "ask":
         response = await ask(user_id, prompt,system)
-    elif provider == "Koala":
-        response = await Koala(user_id, prompt)
+    elif provider == "Romdom":
+        response = await AI6(user_id, prompt)
     elif provider == "Pizzagpt":
-        response = await pizzagpt(user_id, prompt)
+        response = await AI3(user_id, prompt)
     else:
         return JSONResponse(content={"error": "Invalid provider specified"}, status_code=400)
 
@@ -462,7 +446,7 @@ def check_provider(provider: str) -> bool:
     必要とする場合は True、必要としない場合は False を返す。
     """
     # トークン認証が不要なプロバイダーのリスト
-    no_auth_providers = ["Ai4Chat", "GeminiPro", "Pizzagpt","Koala"]  
+    no_auth_providers = ["Copilot", "Pizzagpt","Koala"]  
 
     return provider not in no_auth_providers
 
@@ -556,6 +540,7 @@ async def post_chat(request: Request):
     
 
     return await process_chat(provider, user_id, prompt, system)
+
 
 
 
@@ -692,7 +677,8 @@ async def stream(request: Request):
         return StreamingResponse(iter([f"data: {json.dumps({'response': escape('Invalid provider specified')})}"]),media_type="text/event-stream")
 
 
-
+GENERATED_IMAGES_DIR = Path("./generated_images")
+GENERATED_IMAGES_DIR.mkdir(exist_ok=True)
 
 
 
@@ -723,18 +709,46 @@ async def generate_image(request: Request,token: str, prompt: Optional[str] = No
     if prompt is None:
         return JSONResponse(content={"error": "No prompt provided"}, status_code=400)
 
-    bing_art = BingArt(auth_cookie_U=Token, auth_cookie_KievRPSSecAuth=Kiev_cookies)
-    results = bing_art.generate_images(prompt)
+    cookies_dir = os.path.join(os.path.dirname(__file__), "har")
+    client = g4f.AsyncClient(api_key=read_cookie_files(cookies_dir),response_format='b64_json')
+    try:
+        response = await client.images.generate(
+            prompt=prompt,
+            model="dall-e-3",
+            response_format='b64_json'
+        )
 
-    # 画像URLをbase64に変換
-    images_base64 = []
-    for image in results['images']:
-        response = requests.get(image['url'])
-        image_base64 = base64.b64encode(response.content).decode('utf-8')
-        images_base64.append(image_base64)
+        if 'error' in response:
+            raise HTTPException(status_code=500, detail=response['error'])
 
-    # base64に変換した画像を含むJSONを返す
-    return JSONResponse(content={"images": images_base64})
+
+        image_data_list = []
+        try:
+             image_data_list.append(response.data[0]['b64_json'])
+             image_data_list.append(response.data[1]['b64_json'])
+             image_data_list.append(response.data[2]['b64_json'])
+             image_data_list.append(response.data[3]['b64_json'])
+        except (IndexError, KeyError) as e:
+             print(f"Error accessing image data: {e}")
+
+
+
+        response_data = {"images": image_data_list}
+        clear_generated_images_dir()
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+    # 最後のコメントを更新 (成功した場合のみ)
+    last_prompt[user_id] = prompt
+
+    return JSONResponse(content=response_data)
+
+
+def clear_generated_images_dir():
+    for file in GENERATED_IMAGES_DIR.glob("*"):  # 全てのファイルを対象
+        file.unlink()
 
 
 def clear_log():
@@ -1118,14 +1132,15 @@ async def periodic_resource_update():
         await admin_status_server()
         await asyncio.sleep(2)  # 2秒ごとに更新
 
-@app.on_event("startup")
+
+
 async def startup_event():
     asyncio.create_task(periodic_resource_update())
 # Pusher のインスタンスを作成
 pusher_client = Pusher(
-  app_id="1820345",
-  key="4cbc3c15bfd521142b7a",
-  secret="e2c6238a65b9b7ae8603",
+  app_id="1906477",
+  key="b7ac1ff8c001c16fab67",
+  secret="0ff93753948d04036aac",
   cluster='ap3',
 )
 
@@ -1145,8 +1160,6 @@ async def pusher_authenticate(request: Request):
 
     if not socket_id or not channel_name:
         raise HTTPException(status_code=400, detail="Missing socket_id or channel_name")
-
-    # 認証が必要な場合、ここでユーザー認証を行う
 
     # privateチャンネルの場合、認証を行う
     if channel_name.startswith("private-"):

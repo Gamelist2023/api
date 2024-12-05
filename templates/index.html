@@ -529,14 +529,14 @@
       <div class="setting-options">
         <div class="setting-option">
           <p>お知らせ</p>
-          <p>10/03日時点でのお知らせ ChatGPT/ずんだもん系は動きません(エラー)</p>
+          <p>2024/12/05時点で大幅な修正を行いました</p>
           <label for="provider">AI Provider:</label>
           <select id="provider">
             <optgroup label="通常(システムプロンプト非対応):">
-              <option value="Ai4Chat">Ai4Chat</option>
-              <option value="Random">Random</option> 
+              <option value="AI1">AI1</option>
+              <option value="Copilot">Copilot</option> 
               <option value="Pizzagpt">Pizzagpt</option>
-              <option value="Koala">Koala</option>
+              <option value="Romdom">Romdom</option>
             </optgroup>
             <optgroup label="以下トークンが必須です"></optgroup>
             <optgroup label="システムプロンプト対応:">
@@ -1358,7 +1358,7 @@ function askQuestion() {
   }
 
   if (provider === 'dell3') {
-    fetch('/generate_image?prompt=' + encodeURIComponent(text))
+    fetch(`/generate_image?token=${token || 0}&prompt=` + encodeURIComponent(text))
       .then(response => response.json())
       .then(data => {
         data.images.forEach(imageData => {
