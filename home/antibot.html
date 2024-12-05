@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>サーバー管理システム</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://js.pusher.com/7.0/pusher.min.js"></script>
+    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/turndown/dist/turndown.umd.js"></script>
     <style>
         /* 全体的なスタイル */
@@ -924,14 +924,25 @@
                 document.getElementById('server-management').style.display = 'block';
                 document.getElementById('taskbar').style.display = 'flex';
 
+
+                const tokenResponse = await fetch('/pusher/auth', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: `socket_id=${pusher.connection.socket_id}&channel_name=private-my-channel`
+                });
+
+                const tokenData = await tokenResponse.json();
+                const authToken = tokenData.auth;
+
                 // Pusher のインスタンスを作成
-                const pusher = new Pusher("b7ac1ff8c001c16fab67", {
-                    cluster: 'ap3',
-                    authEndpoint: '/pusher/auth' // 認証エンドポイントを追加
+                const pusher = new Pusher('b7ac1ff8c001c16fab67', {
+                    cluster: 'ap3'
                 });
 
                 // privateチャンネルを購読
-                const channel = pusher.subscribe('private-my-channel');
+                const channel = pusher.subscribe('private-my-channel', { auth: authToken });
 
                 // console_log イベントを購読
                 channel.bind('console_log', function (data) {

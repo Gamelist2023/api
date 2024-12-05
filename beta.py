@@ -1093,7 +1093,7 @@ async def admin_status_server():
 
 async def admin_console():
     consolelog =get_console_log()
-    pusher_client.trigger("private-my-channel", "consolelog", {"message": consolelog})  # privateチャンネルに変更
+    pusher_client.trigger("private-my-channel", "console_log", {"message": consolelog}) 
 
 
 # 定期的にリソース情報を取得・送信
