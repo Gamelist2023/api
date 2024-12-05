@@ -925,6 +925,13 @@
                 document.getElementById('taskbar').style.display = 'flex';
 
 
+                
+
+                // Pusher のインスタンスを作成
+                const pusher = new Pusher('b7ac1ff8c001c16fab67', {
+                    cluster: 'ap3'
+                });
+
                 const tokenResponse = await fetch('/pusher/auth', {
                     method: 'POST',
                     headers: {
@@ -935,11 +942,6 @@
 
                 const tokenData = await tokenResponse.json();
                 const authToken = tokenData.auth;
-
-                // Pusher のインスタンスを作成
-                const pusher = new Pusher('b7ac1ff8c001c16fab67', {
-                    cluster: 'ap3'
-                });
 
                 // privateチャンネルを購読
                 const channel = pusher.subscribe('private-my-channel', { auth: authToken });
