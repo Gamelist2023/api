@@ -585,7 +585,7 @@ async function login() {
             document.getElementById('taskbar').style.display = 'flex';
 
             // WebSocket 接続を開始
-            ws = new WebSocket('ws://' + window.location.host + '/ws'); // ホスト名とポートを自動取得
+            ws = new WebSocket('wss://' + window.location.host + '/ws'); // ホスト名とポートを自動取得
 
             ws.onopen = () => {
                 console.log("WebSocket connection established");
