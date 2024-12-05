@@ -918,27 +918,27 @@
             });
 
             if (response.ok) {
+                const pusher = new Pusher('b7ac1ff8c001c16fab67', {
+                    cluster: 'ap3',
+                    enableStats: true
+                });
                 // ログイン成功
                 document.getElementById('login-form').style.display = 'none';
                 document.getElementById('overlay').style.display = 'none';
                 document.getElementById('server-management').style.display = 'block';
                 document.getElementById('taskbar').style.display = 'flex';
 
+                pusher.connection.bind('connected', async () => {
+                    const tokenResponse = await fetch('/pusher/auth', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: `socket_id=${pusher.connection.socket_id}&channel_name=private-my-channel`
+                    });
 
+              
                 
-
-                // Pusher のインスタンスを作成
-                const pusher = new Pusher('b7ac1ff8c001c16fab67', {
-                    cluster: 'ap3'
-                });
-
-                const tokenResponse = await fetch('/pusher/auth', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-                    body: `socket_id=${pusher.connection.socket_id}&channel_name=private-my-channel`
-                });
 
                 const tokenData = await tokenResponse.json();
                 const authToken = tokenData.auth;
@@ -966,6 +966,8 @@
 
                 // ログイン後にサーバー情報とプロセス情報を取得
                 globalPassword = document.getElementById('password').value; // パスワードをグローバル変数に保存
+
+                  });
 
                 getServerStatus();
                 getConsoleLog(); // ログイン後にコンソールログを取得
