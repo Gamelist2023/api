@@ -967,7 +967,7 @@
                 // ログイン後にサーバー情報とプロセス情報を取得
                 globalPassword = document.getElementById('password').value; // パスワードをグローバル変数に保存
 
-                  });
+                  
 
                 getServerStatus();
                 getConsoleLog(); // ログイン後にコンソールログを取得
@@ -975,6 +975,7 @@
                 getFileList(); //ファイルマネージャー
                 applySettings();
                 loadSettings();
+                });
 
                 // 自動ログインが有効であればパスワードを保存
                 if (document.getElementById('auto-login').checked) {
