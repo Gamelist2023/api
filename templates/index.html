@@ -1114,6 +1114,21 @@ function addMessageToChat(message, isUser, isReloading = false, providerName = n
 }
 
 
+  function saveTextAsFile() {
+    const messages = Array.from(document.querySelectorAll('.chat-message')).map(message => {
+      const messageContent = message.querySelector('.message-content')?.innerText || '';
+      const isUser = message.classList.contains('user');
+      return (isUser ? 'ユーザー：' : 'AI:') + messageContent;
+    }).join('\n');
+
+    const textFileAsBlob = new Blob([messages], { type: 'text/plain' });
+    const downloadLink = document.createElement("a");
+    downloadLink.download = "chat_history.txt";
+    downloadLink.href = window.URL.createObjectURL(textFileAsBlob);
+    downloadLink.click();
+  }
+
+
     function saveDivAsImage() {
       const divToDownload = document.getElementById('image');
       const divHtml = divToDownload.outerHTML;
@@ -1284,6 +1299,7 @@ const temporaryDiv = document.createElement('div');
       oneYearAgo.setFullYear(now.getFullYear() - 1);
       return new Date(oneYearAgo.getTime() + Math.random() * (now.getTime() - oneYearAgo.getTime())).toLocaleString();
     }
+
     function convertDivToP(divHtml) {
   return divHtml
     .replace(/<div class="chat-message user?"/g, '<p class="chat-message user">')
