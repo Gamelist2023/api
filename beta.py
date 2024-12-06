@@ -1105,7 +1105,6 @@ async def periodic_resource_update():
 
 
 
-@app.on_event("startup")
 
 async def startup_event():
     asyncio.create_task(periodic_resource_update())
@@ -1117,6 +1116,7 @@ pusher_client = Pusher(
   cluster='ap3',
 )
 
+app.add_event_handler("startup", startup_event)
 
 
 
