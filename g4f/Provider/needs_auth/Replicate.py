@@ -9,12 +9,11 @@ from ...errors import ResponseError, MissingAuthError
 
 class Replicate(AsyncGeneratorProvider, ProviderModelMixin):
     url = "https://replicate.com"
+    login_url = "https://replicate.com/account/api-tokens"
     working = True
     needs_auth = True
     default_model = "meta/meta-llama-3-70b-instruct"
-    model_aliases = {
-        "meta-llama/Meta-Llama-3-70B-Instruct": default_model
-    }
+    models = [default_model]
 
     @classmethod
     async def create_async_generator(
@@ -25,7 +24,7 @@ class Replicate(AsyncGeneratorProvider, ProviderModelMixin):
         proxy: str = None,
         timeout: int = 180,
         system_prompt: str = None,
-        max_new_tokens: int = None,
+        max_tokens: int = None,
         temperature: float = None,
         top_p: float = None,
         top_k: float = None,
@@ -55,7 +54,7 @@ class Replicate(AsyncGeneratorProvider, ProviderModelMixin):
                     "prompt": format_prompt(messages),
                     **filter_none(
                         system_prompt=system_prompt,
-                        max_new_tokens=max_new_tokens,
+                        max_new_tokens=max_tokens,
                         temperature=temperature,
                         top_p=top_p,
                         top_k=top_k,

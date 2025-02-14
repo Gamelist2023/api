@@ -1,19 +1,21 @@
 from __future__ import annotations
-import hashlib
+
 import time
+import hashlib
 from aiohttp import ClientSession
+
 from ...typing import AsyncResult, Messages
 from ..base_provider import AsyncGeneratorProvider, ProviderModelMixin
 from ..helper import format_prompt
 
 class GPROChat(AsyncGeneratorProvider, ProviderModelMixin):
-    label = "GPROChat"
     url = "https://gprochat.com"
     api_endpoint = "https://gprochat.com/api/generate"
+    
     working = False
     supports_stream = True
     supports_message_history = True
-    default_model = 'gemini-pro'
+    default_model = 'gemini-1.5-pro'
 
     @staticmethod
     def generate_signature(timestamp: int, message: str) -> str:
@@ -21,15 +23,6 @@ class GPROChat(AsyncGeneratorProvider, ProviderModelMixin):
         hash_input = f"{timestamp}:{message}:{secret_key}"
         signature = hashlib.sha256(hash_input.encode('utf-8')).hexdigest()
         return signature
-
-    @classmethod
-    def get_model(cls, model: str) -> str:
-        if model in cls.models:
-            return model
-        elif model in cls.model_aliases:
-            return cls.model_aliases[model]
-        else:
-            return cls.default_model
 
     @classmethod
     async def create_async_generator(

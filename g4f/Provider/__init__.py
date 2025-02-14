@@ -6,39 +6,41 @@ from ..providers.base_provider  import AsyncProvider, AsyncGeneratorProvider
 from ..providers.create_images  import CreateImagesProvider
 
 from .deprecated       import *
-from .selenium         import *
 from .needs_auth       import *
 from .not_working      import *
 from .local            import *
+from .hf               import HuggingFace, HuggingChat, HuggingFaceAPI, HuggingFaceInference
+from .hf_space         import HuggingSpace
+from .mini_max         import HailuoAI, MiniMax
+from .template         import OpenaiTemplate, BackendApi
 
-from .Airforce         import Airforce
-from .AmigoChat        import AmigoChat
-from .Blackbox         import Blackbox
-from .ChatGpt          import ChatGpt
-from .ChatGptEs        import ChatGptEs
-from .Cloudflare       import Cloudflare
-from .Copilot          import Copilot
-from .DarkAI           import DarkAI
-from .DDG              import DDG
-from .DeepInfraChat    import DeepInfraChat
-from .Free2GPT         import Free2GPT
-from .FreeGpt          import FreeGpt
-from .GizAI            import GizAI
-from .HuggingChat      import HuggingChat
-from .Liaobots         import Liaobots
-from .MagickPen        import MagickPen
-from .PerplexityLabs   import PerplexityLabs
-from .Pi               import Pi
-from .Pizzagpt         import Pizzagpt
-from .Prodia           import Prodia
-from .Reka             import Reka
-from .ReplicateHome    import ReplicateHome
-from .RobocodersAPI    import RobocodersAPI
-from .RubiksAI         import RubiksAI
-from .TeachAnything    import TeachAnything
-from .Upstage          import Upstage
-from .You              import You
-from .Mhystical        import Mhystical
+from .Blackbox             import Blackbox
+from .BlackboxAPI          import BlackboxAPI
+from .ChatGLM              import ChatGLM
+from .ChatGpt              import ChatGpt
+from .ChatGptEs            import ChatGptEs
+from .Cloudflare           import Cloudflare
+from .Copilot              import Copilot
+from .DDG                  import DDG
+from .DeepInfraChat        import DeepInfraChat
+from .Free2GPT             import Free2GPT
+from .FreeGpt              import FreeGpt
+from .GizAI                import GizAI
+from .Glider               import Glider
+from .ImageLabs            import ImageLabs
+from .Jmuz                 import Jmuz
+from .Liaobots             import Liaobots
+from .Mhystical            import Mhystical
+from .OIVSCode             import OIVSCode
+from .PerplexityLabs       import PerplexityLabs
+from .Pi                   import Pi
+from .Pizzagpt             import Pizzagpt
+from .PollinationsAI       import PollinationsAI
+from .PollinationsImage    import PollinationsImage
+from .Prodia               import Prodia
+from .TeachAnything        import TeachAnything
+from .You                  import You
+from .Yqcloud              import Yqcloud
 
 import sys
 
@@ -51,6 +53,7 @@ __providers__: list[ProviderType] = [
     if isinstance(provider, type)
     and issubclass(provider, BaseProvider)
 ]
+__providers__ = __providers__ + HuggingSpace.providers
 __all__: list[str] = [
     provider.__name__ for provider in __providers__
 ]

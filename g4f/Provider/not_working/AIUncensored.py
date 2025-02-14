@@ -1,132 +1,116 @@
 from __future__ import annotations
 
+from aiohttp import ClientSession
+import time
+import hmac
+import hashlib
 import json
 import random
-from aiohttp import ClientSession, ClientError
-import asyncio
-from itertools import cycle
 
 from ...typing import AsyncResult, Messages
+from ...requests.raise_for_status import raise_for_status
 from ..base_provider import AsyncGeneratorProvider, ProviderModelMixin
-from ...image import ImageResponse
+from ..helper import format_prompt
+from ...providers.response import FinishReason
 
 class AIUncensored(AsyncGeneratorProvider, ProviderModelMixin):
     url = "https://www.aiuncensored.info/ai_uncensored"
-    api_endpoints_text = [
-        "https://twitterclone-i0wr.onrender.com/api/chat",
-        "https://twitterclone-4e8t.onrender.com/api/chat",
-        "https://twitterclone-8wd1.onrender.com/api/chat",
-    ]
-    api_endpoints_image = [
-        "https://twitterclone-4e8t.onrender.com/api/image",
-        "https://twitterclone-i0wr.onrender.com/api/image",
-        "https://twitterclone-8wd1.onrender.com/api/image",
-    ]
+    api_key = "62852b00cb9e44bca86f0ec7e7455dc6"
+    
     working = False
     supports_stream = True
     supports_system_message = True
     supports_message_history = True
     
-    default_model = 'TextGenerations'
-    text_models = [default_model]
-    image_models = ['ImageGenerations']
-    models = [*text_models, *image_models]
+    default_model = "hermes3-70b"
+    models = [default_model]
     
-    model_aliases = {
-        "flux": "ImageGenerations",
-    }
+    model_aliases = {"hermes-3": "hermes3-70b"}
 
     @staticmethod
-    def generate_cipher() -> str:
-        """Generate a cipher in format like '3221229284179118'"""
-        return ''.join([str(random.randint(0, 9)) for _ in range(16)])
+    def calculate_signature(timestamp: str, json_dict: dict) -> str:
+        message = f"{timestamp}{json.dumps(json_dict)}"
+        secret_key = b'your-super-secret-key-replace-in-production'
+        signature = hmac.new(
+            secret_key,
+            message.encode('utf-8'),
+            hashlib.sha256
+        ).hexdigest()
+        return signature
 
-    @classmethod
-    def get_model(cls, model: str) -> str:
-        if model in cls.models:
-            return model
-        elif model in cls.model_aliases:
-            return cls.model_aliases[model]
-        else:
-            return cls.default_model
+    @staticmethod
+    def get_server_url() -> str:
+        servers = [
+            "https://llm-server-nov24-ibak.onrender.com",
+            "https://llm-server-nov24-qv2w.onrender.com", 
+            "https://llm-server-nov24.onrender.com"
+        ]
+        return random.choice(servers)
 
     @classmethod
     async def create_async_generator(
         cls,
         model: str,
         messages: Messages,
+        stream: bool = False,
         proxy: str = None,
+        api_key: str = None,
         **kwargs
-    ) -> AsyncResult:
+    ) -> AsyncResult:      
         model = cls.get_model(model)
+        
+        timestamp = str(int(time.time()))
+        
+        json_dict = {
+            "messages": [{"role": "user", "content": format_prompt(messages)}],
+            "model": model,
+            "stream": stream
+        }
+        
+        signature = cls.calculate_signature(timestamp, json_dict)
         
         headers = {
             'accept': '*/*',
             'accept-language': 'en-US,en;q=0.9',
-            'cache-control': 'no-cache',
             'content-type': 'application/json',
             'origin': 'https://www.aiuncensored.info',
-            'pragma': 'no-cache',
-            'priority': 'u=1, i',
             'referer': 'https://www.aiuncensored.info/',
-            'sec-ch-ua': '"Not?A_Brand";v="99", "Chromium";v="130"',
-            'sec-ch-ua-mobile': '?0',
-            'sec-ch-ua-platform': '"Linux"',
-            'sec-fetch-dest': 'empty',
-            'sec-fetch-mode': 'cors',
-            'sec-fetch-site': 'cross-site',
-            'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
+            'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+            'x-api-key': cls.api_key,
+            'x-timestamp': timestamp,
+            'x-signature': signature
         }
         
+        url = f"{cls.get_server_url()}/api/chat"
+        
         async with ClientSession(headers=headers) as session:
-            if model in cls.image_models:
-                prompt = messages[-1]['content']
-                data = {
-                    "prompt": prompt,
-                    "cipher": cls.generate_cipher()
-                }
+            async with session.post(url, json=json_dict, proxy=proxy) as response:
+                await raise_for_status(response)
                 
-                endpoints = cycle(cls.api_endpoints_image)
-                
-                while True:
-                    endpoint = next(endpoints)
-                    try:
-                        async with session.post(endpoint, json=data, proxy=proxy, timeout=10) as response:
-                            response.raise_for_status()
-                            response_data = await response.json()
-                            image_url = response_data['image_url']
-                            image_response = ImageResponse(images=image_url, alt=prompt)
-                            yield image_response
-                            return
-                    except (ClientError, asyncio.TimeoutError):
-                        continue
-
-            elif model in cls.text_models:
-                data = {
-                    "messages": messages,
-                    "cipher": cls.generate_cipher()
-                }
-                
-                endpoints = cycle(cls.api_endpoints_text)
-                
-                while True:
-                    endpoint = next(endpoints)
-                    try:
-                        async with session.post(endpoint, json=data, proxy=proxy, timeout=10) as response:
-                            response.raise_for_status()
-                            full_response = ""
-                            async for line in response.content:
-                                line = line.decode('utf-8')
-                                if line.startswith("data: "):
+                if stream:
+                    full_response = ""
+                    async for line in response.content:
+                        if line:
+                            try:
+                                line_text = line.decode('utf-8')
+                                if line_text.startswith(''):
+                                    data = line_text[6:]
+                                    if data == '[DONE]':
+                                        yield FinishReason("stop")
+                                        break
                                     try:
-                                        json_str = line[6:]
-                                        if json_str != "[DONE]":
-                                            data = json.loads(json_str)
-                                            if "data" in data:
-                                                full_response += data["data"]
-                                                yield data["data"]
+                                        json_data = json.loads(data)
+                                        if 'data' in json_data:
+                                            yield json_data['data']
+                                            full_response += json_data['data']
                                     except json.JSONDecodeError:
                                         continue
-                            return
-                    except (ClientError, asyncio.TimeoutError):
-                        continue
+                            except UnicodeDecodeError:
+                                continue
+                    if full_response:
+                        yield FinishReason("length")
+                else:
+                    response_json = await response.json()
+                    if 'content' in response_json:
+                        yield response_json['content']
+                        yield FinishReason("length")

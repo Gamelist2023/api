@@ -1,19 +1,20 @@
 from __future__ import annotations
 
 from ...cookies import get_cookies
-from ...image import ImageResponse
+from ...providers.response import ImageResponse
 from ...errors import MissingAuthError
 from ...typing import AsyncResult, Messages, Cookies
 from ..base_provider import AsyncGeneratorProvider, ProviderModelMixin
 from ..bing.create_images import create_images, create_session
+from ..helper import format_image_prompt
 
 class BingCreateImages(AsyncGeneratorProvider, ProviderModelMixin):
     label = "Microsoft Designer in Bing"
-    parent = "Bing"
     url = "https://www.bing.com/images/create"
     working = True
     needs_auth = True
-    image_models = ["dall-e"]
+    image_models = ["dall-e-3"]
+    models = image_models
 
     def __init__(self, cookies: Cookies = None, proxy: str = None, api_key: str = None) -> None:
         if api_key is not None:
@@ -35,7 +36,7 @@ class BingCreateImages(AsyncGeneratorProvider, ProviderModelMixin):
         **kwargs
     ) -> AsyncResult:
         session = BingCreateImages(cookies, proxy, api_key)
-        yield await session.generate(messages[-1]["content"] if prompt is None else prompt)
+        yield await session.generate(format_image_prompt(messages, prompt))
 
     async def generate(self, prompt: str) -> ImageResponse:
         """

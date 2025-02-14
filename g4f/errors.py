@@ -37,14 +37,20 @@ class MissingAuthError(Exception):
 class NoImageResponseError(Exception):
     ...
 
-class RateLimitError(Exception):
-    ...
-
 class ResponseError(Exception):
     ...
 
 class ResponseStatusError(Exception):
     ...
 
+class RateLimitError(ResponseStatusError):
+    ...
+
 class NoValidHarFileError(Exception):
     ...
+
+class TimeoutError(Exception):
+    """Raised for timeout errors during API requests."""
+
+class ConversationLimitError(Exception):
+    """Raised for conversation limit during API requests to AI endpoint."""

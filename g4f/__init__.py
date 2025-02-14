@@ -2,16 +2,17 @@ from __future__ import annotations
 
 import os
 import logging
+from typing import Union, Optional, Coroutine
 
 from . import debug, version
 from .models import Model
 from .client import Client, AsyncClient
-from .typing import Messages, CreateResult, AsyncResult, Union
-from .errors import StreamNotSupportedError, ModelNotAllowedError
+from .typing import Messages, CreateResult, AsyncResult, ImageType
+from .errors import StreamNotSupportedError
 from .cookies import get_cookies, set_cookies
 from .providers.types import ProviderType
-from .providers.base_provider import AsyncGeneratorProvider
-from .client.service import get_model_and_provider, get_last_provider
+from .providers.helper import concat_chunks, async_concat_chunks
+from .client.service import get_model_and_provider
 
 #Configure "g4f" logger
 logger = logging.getLogger(__name__)
@@ -27,74 +28,54 @@ class ChatCompletion:
                messages : Messages,
                provider : Union[ProviderType, str, None] = None,
                stream   : bool = False,
-               auth     : Union[str, None] = None,
-               ignored  : list[str] = None, 
+               image    : ImageType = None,
+               image_name: Optional[str] = None,
                ignore_working: bool = False,
                ignore_stream: bool = False,
-               patch_provider: callable = None,
                **kwargs) -> Union[CreateResult, str]:
+        if image is not None:
+            kwargs["images"] = [(image, image_name)]
         model, provider = get_model_and_provider(
             model, provider, stream,
-            ignored, ignore_working,
-            ignore_stream or kwargs.get("ignore_stream_and_auth")
+            ignore_working,
+            ignore_stream,
+            has_images="images" in kwargs,
         )
-
-        if auth is not None:
-            kwargs['auth'] = auth
-        
         if "proxy" not in kwargs:
             proxy = os.environ.get("G4F_PROXY")
             if proxy:
-                kwargs['proxy'] = proxy
+                kwargs["proxy"] = proxy
+        if ignore_stream:
+            kwargs["ignore_stream"] = True
 
-        if patch_provider:
-            provider = patch_provider(provider)
+        result = provider.get_create_function()(model, messages, stream=stream, **kwargs)
 
-        result = provider.create_completion(model, messages, stream=stream, **kwargs)
-
-        return result if stream else ''.join([str(chunk) for chunk in result])
+        return result if stream else concat_chunks(result)
 
     @staticmethod
     def create_async(model    : Union[Model, str],
                      messages : Messages,
                      provider : Union[ProviderType, str, None] = None,
                      stream   : bool = False,
-                     ignored  : list[str] = None,
+                     image    : ImageType = None,
+                     image_name: Optional[str] = None,
+                     ignore_stream: bool = False,
                      ignore_working: bool = False,
-                     patch_provider: callable = None,
-                     **kwargs) -> Union[AsyncResult, str]:
-        model, provider = get_model_and_provider(model, provider, False, ignored, ignore_working)
+                     **kwargs) -> Union[AsyncResult, Coroutine[str]]:
+        if image is not None:
+            kwargs["images"] = [(image, image_name)]
+        model, provider = get_model_and_provider(model, provider, False, ignore_working, has_images="images" in kwargs)
+        if "proxy" not in kwargs:
+            proxy = os.environ.get("G4F_PROXY")
+            if proxy:
+                kwargs["proxy"] = proxy
+        if ignore_stream:
+            kwargs["ignore_stream"] = True
 
-        if stream:
-            if isinstance(provider, type) and issubclass(provider, AsyncGeneratorProvider):
-                return provider.create_async_generator(model, messages, **kwargs)
-            raise StreamNotSupportedError(f'{provider.__name__} does not support "stream" argument in "create_async"')
+        result = provider.get_async_create_function()(model, messages, stream=stream, **kwargs)
 
-        if patch_provider:
-            provider = patch_provider(provider)
+        if not stream:
+            if hasattr(result, "__aiter__"):
+                result = async_concat_chunks(result)
 
-        return provider.create_async(model, messages, **kwargs)
-
-class Completion:
-    @staticmethod
-    def create(model    : Union[Model, str],
-               prompt   : str,
-               provider : Union[ProviderType, None] = None,
-               stream   : bool = False,
-               ignored  : list[str] = None, **kwargs) -> Union[CreateResult, str]:
-        allowed_models = [
-            'code-davinci-002',
-            'text-ada-001',
-            'text-babbage-001',
-            'text-curie-001',
-            'text-davinci-002',
-            'text-davinci-003'
-        ]
-        if model not in allowed_models:
-            raise ModelNotAllowedError(f'Can\'t use {model} with Completion.create()')
-
-        model, provider = get_model_and_provider(model, provider, stream, ignored)
-
-        result = provider.create_completion(model, [{"role": "user", "content": prompt}], stream=stream, **kwargs)
-
-        return result if stream else ''.join(result)
+        return result

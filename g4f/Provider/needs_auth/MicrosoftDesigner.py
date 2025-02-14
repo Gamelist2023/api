@@ -6,7 +6,7 @@ import random
 import asyncio
 import json
 
-from ...image import ImageResponse
+from ...providers.response import ImageResponse
 from ...errors import MissingRequirementsError, NoValidHarFileError
 from ...typing import AsyncResult, Messages
 from ...requests.raise_for_status import raise_for_status
@@ -14,13 +14,14 @@ from ...requests.aiohttp import get_connector
 from ...requests import get_nodriver
 from ..Copilot import get_headers, get_har_files
 from ..base_provider import AsyncGeneratorProvider, ProviderModelMixin
-from ..helper import get_random_hex
+from ..helper import get_random_hex, format_image_prompt
 from ... import debug
 
 class MicrosoftDesigner(AsyncGeneratorProvider, ProviderModelMixin):
     label = "Microsoft Designer"
     url = "https://designer.microsoft.com"
     working = True
+    use_nodriver = True
     needs_auth = True
     default_image_model = "dall-e-3"
     image_models = [default_image_model, "1024x1024", "1024x1792", "1792x1024"]
@@ -38,7 +39,7 @@ class MicrosoftDesigner(AsyncGeneratorProvider, ProviderModelMixin):
         image_size = "1024x1024"
         if model != cls.default_image_model and model in cls.image_models:
             image_size = model
-        yield await cls.generate(messages[-1]["content"] if prompt is None else prompt, image_size, proxy)
+        yield await cls.generate(format_image_prompt(messages, prompt), image_size, proxy)
 
     @classmethod
     async def generate(cls, prompt: str, image_size: str, proxy: str = None) -> ImageResponse:
@@ -142,26 +143,29 @@ def readHAR(url: str) -> tuple[str, str]:
     return api_key, user_agent
 
 async def get_access_token_and_user_agent(url: str, proxy: str = None):
-    browser = await get_nodriver(proxy=proxy)
-    page = await browser.get(url)
-    user_agent = await page.evaluate("navigator.userAgent")
-    access_token = None
-    while access_token is None:
-        access_token = await page.evaluate("""
-            (() => {
-                for (var i = 0; i < localStorage.length; i++) {
-                    try {
-                        item = JSON.parse(localStorage.getItem(localStorage.key(i)));
-                        if (item.credentialType == "AccessToken" 
-                            && item.expiresOn > Math.floor(Date.now() / 1000)
-                            && item.target.includes("designerappservice")) {
-                            return item.secret;
-                        }
-                    } catch(e) {}
-                }
-            })()
-        """)
-        if access_token is None:
-            await asyncio.sleep(1)
-    await page.close()
-    return access_token, user_agent
+    browser, stop_browser = await get_nodriver(proxy=proxy, user_data_dir="designer")
+    try:
+        page = await browser.get(url)
+        user_agent = await page.evaluate("navigator.userAgent")
+        access_token = None
+        while access_token is None:
+            access_token = await page.evaluate("""
+                (() => {
+                    for (var i = 0; i < localStorage.length; i++) {
+                        try {
+                            item = JSON.parse(localStorage.getItem(localStorage.key(i)));
+                            if (item.credentialType == "AccessToken" 
+                                && item.expiresOn > Math.floor(Date.now() / 1000)
+                                && item.target.includes("designerappservice")) {
+                                return item.secret;
+                            }
+                        } catch(e) {}
+                    }
+                })()
+            """)
+            if access_token is None:
+                await asyncio.sleep(1)
+        await page.close()
+        return access_token, user_agent
+    finally:
+        stop_browser()

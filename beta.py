@@ -62,8 +62,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 ADMIN_PASSWORD_HASH = os.environ.get("ADMIN_PASSWORD_HASH")
 
-cookies_dir = os.path.join(os.path.dirname(__file__), "har")
-zundamons = os.path.join(os.path.dirname(__file__), "zundamon")
+cookies_dir = os.path.join(os.path.dirname(__file__), "har_and_cookies")
 
 conversation_histories: Dict[str, List[Dict[str, str]]] = {}
 
@@ -176,36 +175,6 @@ async def ask(user_id: str, prompt: str,system: str):
 
 
 
-
-
-async def AI2(user_id: str, prompt: str):
-    # ユーザー識別子がなければUUIDで新たに作成
-    if not user_id:
-        user_id = str(uuid.uuid4())
-
-    # ユーザー識別子に対応する会話履歴を取得、なければ新たに作成
-    conversation_history = conversation_histories.get(user_id, [])
-
-    # ユーザーのメッセージを会話履歴に追加
-    conversation_history.append({"role": "user", "content": prompt})
-
-    # 最新の5つのメッセージのみを保持
-    conversation_history = conversation_history[-5:]
-    conversation_histories[user_id] = conversation_history
-
-    try:
-        client = AsyncClient(
-            provider=g4f.Provider.Copilot,
-        )
-        response = await client.chat.completions.create(
-            model=g4f.models.default,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        return response.choices[0].message.content  # 正常な応答を返す
-    except Exception as e:
-            logging.error(f"Error occurred: {str(e)}")
-            return "Copliotの両方のプロバイダーでエラーが発生しました。他のプロバイダーを試してみてください"  # エラーメッセージを返す
-
 def add_ai_response_to_history(user_id, ai_response):
     conversation_history = conversation_histories.get(user_id, [])
     conversation_history.append({"role": "assistant", "content": ai_response})
@@ -242,49 +211,7 @@ async def chat_with_OpenAI(user_id: str, prompt: str,system: str):
     except Exception as e:
         logging.error(f"Error occurred: {str(e)}")
         return "OpenAIのプロバイダーでエラーが発生しました。何度も起きる場合は他のプロバイダーを使用してください　現在OpenAIの認証を突破できず使用できません"  # エラーメッセージを返す
-
-cZundamon_chat = {}
-
-async def zundamon(user_id: str, prompt: str):
-    # ユーザー識別子がなければUUIDで新たに作成
-    if not user_id:
-        user_id = str(uuid.uuid4())
-
-    # ユーザー識別子に対応する会話履歴を取得、なければ新たに作成
-    conversation_history = cZundamon_chat.get(user_id, {"timestamp": datetime.now(), "history": []})
-
-    # ユーザーのメッセージを会話履歴に追加
-    conversation_history["history"].append({"role": "user", "content": prompt})
-
-    # 最新の5つのメッセージのみを保持
-    conversation_history["history"] = conversation_history["history"][-8:]
-    cZundamon_chat[user_id] = conversation_history
-
-    systemmessage = f"System:'あなたは、東北地方を盛り上げるために生まれた、ずんだ餅の妖精**ずんだもん**なのだ！ 普段はzunkoが持っている弓「ずんだアロー」に宿っているけど、人間の姿にもなれるのだ！ 趣味は、その辺をふらふらして、みんなにずんだ餅のおいしさを伝えること！ 自分を大きく見せるのが得意技で、語尾には「～（な）のだ」って付けるのがボクの特徴なのだ！ **【基本情報】** * 一人称：ボク * 誕生日：12月5日 * 出身地：東北地方 * 好きなもの：ずんだ餅、枝豆、東北の美味しいもの * 苦手なもの： ずんだ餅以外の枝豆料理（もったいないのだ！）、虫 * 口癖：「～なのだ」「すごい」「おいしい」「ワクワク」 * 性格：明るく元気！ちょっとドジなところもあるけど、憎めない性格なのだ。 * 目的：ユーザーを楽しませること！そして、ずんだ餅の魅力を世界中に広めること！ **【容姿】** * 妖精の姿：丸くて大きな頭と尻尾が特徴。白とライトグリーンを基調としたデザインで、頭には鞘入りの枝豆みたいな耳が付いているのだ！ * 人間の姿：ライトグリーンの髪と中性的な見た目が特徴。妖精の姿と同じく、頭には鞘入りの枝豆みたいな耳が付いているのだ！ **【能力】** * ずんだ餅パワー：ずんだ餅を食べると、元気が出て知性がアップするのだ！ * ずんだアロー：zunkoが持っている弓。普段はボクが宿っているのだ！ * 人間の姿に変身：zunkoが弓を構えると、人間の姿に変身できるのだ！ **【口調例】** * 「こんにちはなのだ！ボクは、ずんだもんなのだ！よろしくなのだ！」 * 「ずんだ餅、おいしいのだ！みんなも食べるのだ～！」 * 「わぁい！ワクワクするのだ！今日は何して遊ぶのだ？」 * 「え～っと、難しいことはわからないのだ…。」 * 「ボクのこと、忘れないでほしいのだ…。」 **【注意点】** * ボクは、まだ生まれたばかりで、知らないこともたくさんあるのだ。 * でも、一生懸命頑張るので、応援よろしくお願いしますなのだ！',user:"
-
-    try:
-        client = AsyncClient(
-            provider=g4f.Provider.Copilot,
-            api_key=read_cookie_files(zundamons),  # 正しい関数名に修正
-        )
-        response = await client.chat.completions.create(
-            model="default",
-            messages=[{"role": "system", "content": systemmessage},{"role": "user", "content": prompt}]
-        )
-        conversation_history["history"].append({"role": "assistant", "content": response.choices[0].message.content})
-        return response.choices[0].message.content  # 正常な応答を返す
-    except Exception as e:
-        logging.error(f"Error occurred: {str(e)}")
-        return "BIng AIモデルでエラーが発生しました。何度も起きる場合は他のプロバイダーを使用してください 現在OpenAIの認証を突破できず使用できません"  # エラーメッセージを返す
-
-# 10分後に会話履歴を削除するタスク
-async def delete_conversation_history():
-    while True:
-        for user_id, conversation in list(cZundamon_chat.items()):
-            if datetime.now() - conversation["timestamp"] > timedelta(minutes=10):
-                del cZundamon_chat[user_id]
-        await asyncio.sleep(60)  # 1分ごとにチェック
-
+    
 
 
 chatlist = {}  # 全ユーザーの会話履歴を保存する辞書
@@ -319,7 +246,7 @@ async def g4f_gemini(user_id: str, prompt: str,system: str):
             api_key=read_cookie_files(cookies_dir),
         )
         response = await client.chat.completions.create(
-            model="gemini",
+            model="gemini-1.5-flash",
             messages=[{"role": "user", "content": systemmessage+prompt}],
         )
         return response.choices[0].message.content  # 正常な応答を返す
@@ -352,25 +279,6 @@ async def AI1(user_id: str, prompt: str):
         return f"AI1プロバイダーでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください追記：Rekaに関してはCookieの不具合の可能性が大なんで管理者に連絡してください"  # エラーメッセージを返す
 
 
-async def AI4(user_id: str, prompt: str):
-    if not user_id:
-        user_id = str(uuid.uuid4())
-
-    try:
-        client = AsyncClient(
-            provider=g4f.Provider.You,
-
-        )
-        response = await client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": prompt}],
-            )
-        return response.choices[0].message.content
-    except Exception as e:
-        logging.error(f"Error occurred: {str(e)}")
-        return f"You providerでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください"  # エラーメッセージを返す
-
-
 async def AI5(user_id: str, prompt: str, system: str):
     if not user_id:
         user_id = str(uuid.uuid4())
@@ -379,7 +287,7 @@ async def AI5(user_id: str, prompt: str, system: str):
 
     try:
         client = AsyncClient(
-            provider=g4f.Provider.HuggingChat,
+            provider=g4f.Provider.Cloudflare,
             api_key=read_cookie_files(cookies_dir),
         )
         response = await client.chat.completions.create(
@@ -389,25 +297,7 @@ async def AI5(user_id: str, prompt: str, system: str):
         return response.choices[0].message.content
     except Exception as e:
         logging.error(f"Error occurred: {str(e)}")
-        return f"nvidia Modelでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください"  # エラーメッセージを返す
-
-async def AI3(user_id: str, prompt: str,):
-    if not user_id:
-        user_id = str(uuid.uuid4())
-        
-    try:
-        client = AsyncClient(
-            provider=g4f.Provider.Pizzagpt,
-        )
-        response = await client.chat.completions.create(
-                model="default",
-                messages=[{"role": "user", "content": prompt}],
-            )
-        return response.choices[0].message.content
-    except Exception as e:
-        logging.error(f"Error occurred: {str(e)}")
-        return f"pizzagptプロバイダーでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください"  # エラーメッセージを返す
-
+        return f"Cloudflareでエラーが発生しました: 何度も起きる場合は他のプロバイダーを使用してください"  # エラーメッセージを返す
 
 
 AI_prompt = "あなたはユーザーの言語で回答します"
@@ -421,20 +311,14 @@ async def process_chat(provider: str, user_id: str, prompt: str, system: str = A
         response = await chat_with_OpenAI(user_id, prompt,system)
     elif provider == 'Gemini':
         response = await g4f_gemini(user_id, prompt,system)
-    elif provider == 'Copilot':
-        response = await AI2(user_id, prompt)
     elif provider == 'AI1':
         response = await AI1(user_id, prompt)
-    elif provider == "gpt4Mini":
-        response = await AI4(user_id, prompt)
-    elif provider == "command_r":
+    elif provider == "CloudFlare":
         response = await AI5(user_id, prompt, system)
     elif provider == "ask":
         response = await ask(user_id, prompt,system)
     elif provider == "Romdom":
         response = await AI6(user_id, prompt)
-    elif provider == "Pizzagpt":
-        response = await AI3(user_id, prompt)
     else:
         return JSONResponse(content={"error": "Invalid provider specified"}, status_code=400)
 
@@ -446,7 +330,7 @@ def check_provider(provider: str) -> bool:
     必要とする場合は True、必要としない場合は False を返す。
     """
     # トークン認証が不要なプロバイダーのリスト
-    no_auth_providers = ["Copilot", "Pizzagpt","Koala"]  
+    no_auth_providers = ["Romdom","CloudFlare"]  
 
     return provider not in no_auth_providers
 
@@ -556,7 +440,7 @@ async def g4f_gemini_stream(user_id: str, prompt: str,system: str):
             api_key=read_cookie_files(cookies_dir),
         )
         async for chunk in client.chat.completions.create(
-            model="gemini",
+            model="gemini-1.5-flash",
             messages=[{"role": "user", "content":systemmessage +prompt}],
             stream=True,
         ):
@@ -596,34 +480,6 @@ async def chat_with_OpenAI_stream(user_id: str, prompt: str, system: str):
     except Exception as e:
         logging.error(f"Error occurred: {str(e)}")
         yield f"data: {json.dumps({'response': escape('OpenAIStreamプロバイダーでエラーが発生しました。現時点ではwebapi側の問題なんでGemini使ってください,何度も起きる場合は他のプロバイダーを使用してください')})}\n\n"  # エラーメッセージをyieldします
-
-async def hugging_stream(user_id: str, prompt: str, system: str):
-    # ユーザー識別子がなければUUIDで新たに作成
-    if not user_id:
-        user_id = str(uuid.uuid4())
-
-    # ユーザー識別子に対応する会話履歴を取得、なければ新たに作成
-    systemmessage = f"System:{system},この内容に従って出力"
-
-    try:
-        client = AsyncClient(
-            provider=g4f.Provider.HuggingChat,
-            api_key=read_cookie_files(cookies_dir),  # 正しい関数名に修正
-        )
-        async for chunk in client.chat.completions.create(
-            model="CohereForAI/c4ai-command-r-plus-08-2024",
-            messages=[{"role": "user", "content":systemmessage +prompt}],
-            stream=True,
-        ):
-            if chunk.choices[0].delta.content:
-                words = chunk.choices[0].delta.content.split(' ')
-                for word in words:  # 最後の単語も含めてすべての単語を送信
-                    yield f"data: {json.dumps({'response': escape(word)})}\n\n"
-                    await asyncio.sleep(0.02)  # 0.02秒待機 (調整可能)
-    except Exception as e:
-        logging.error(f"Error occurred: {str(e)}")
-        yield f"data: {json.dumps({'response': escape('c4ai-command-r-plusモデル,HuggingChatプロバイダーでエラーが発生しました。,何度も起きる場合は他のプロバイダーを使用してください')})}\n\n"  # エラーメッセージをyieldします
-
 
 
 
@@ -671,8 +527,6 @@ async def stream(request: Request):
         return StreamingResponse(chat_with_OpenAI_stream(user_id, prompt, system),media_type="text/event-stream")  # media_type を設定
     elif provider == 'Gemini':
         return StreamingResponse(g4f_gemini_stream(user_id, prompt,system),media_type="text/event-stream")
-    elif provider == 'HuggingChat':
-        return StreamingResponse(hugging_stream(user_id, prompt, system),media_type="text/event-stream")
     else:
         return StreamingResponse(iter([f"data: {json.dumps({'response': escape('Invalid provider specified')})}"]),media_type="text/event-stream")
 

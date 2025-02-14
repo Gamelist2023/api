@@ -529,30 +529,25 @@
       <div class="setting-options">
         <div class="setting-option">
           <p>お知らせ</p>
-          <p>2024/12/05時点で大幅な修正を行いました</p>
+          <p>2025/2/14時点で安定するプロバイダーのみに限定します(renderer.comの制限もあるので)</p>
           <label for="provider">AI Provider:</label>
           <select id="provider">
             <optgroup label="通常(システムプロンプト非対応):">
               <option value="AI1">AI1</option>
-              <option value="Copilot">Copilot</option> 
-              <option value="Pizzagpt">Pizzagpt</option>
               <option value="Romdom">Romdom</option>
+              <option value="CloudFlare">CloudFlare</option>
             </optgroup>
             <optgroup label="以下トークンが必須です"></optgroup>
             <optgroup label="システムプロンプト対応:">
-              <option value="gpt4Mini">gpt4Mini</option>
-              <option value="command_r">command_r</option>
               <option value="ask">DeepinFra</option>
               <option value="Gemini">Gemini</option>
             </optgroup>
             <optgroup label="ストリーミング＆システムプロンプト対応:">
               <option value="!OpenAI">ChatGPT(Stream)</option>
               <option value="!Gemini">Gemini(Stream)</option>
-              <option value="!HuggingChat">HuggingChat(Stream)</option>
             </optgroup>
             <optgroup label="その他:">
               <option value="OpenAI">ChatGPT</option>
-              <option value="zundamon">ChatGPT(ずんだもん)</option>
               <option value="dell3">dall-e3(画像生成)</option>
             </optgroup>
           </select>
@@ -1117,7 +1112,7 @@ function addMessageToChat(message, isUser, isReloading = false, providerName = n
   function saveTextAsFile() {
     const messages = Array.from(document.querySelectorAll('.chat-message')).map(message => {
       const messageContent = message.querySelector('.message-content')?.innerText || '';
-      const isUser = message.classList.contains('user');
+      const isUser = mCopilotessage.classList.contains('user');
       return (isUser ? 'ユーザー：' : 'AI:') + messageContent;
     }).join('\n');
 

@@ -1,134 +1,182 @@
 from __future__ import annotations
 
+import time
+from aiohttp import ClientSession, ClientTimeout
 import json
-import aiohttp
-from aiohttp import ClientSession, BaseConnector
+import asyncio
+import random
 
-from ..typing import AsyncResult, Messages
-from .base_provider import AsyncGeneratorProvider, ProviderModelMixin, BaseConversation
-from .helper import format_prompt
-from ..requests.aiohttp import get_connector
+from ..typing import AsyncResult, Messages, Cookies
 from ..requests.raise_for_status import raise_for_status
-from .. import debug
+from .base_provider import AsyncGeneratorProvider, ProviderModelMixin
+from .helper import format_prompt
+from ..providers.response import FinishReason, JsonConversation
+from ..errors import ModelNotSupportedError, ResponseStatusError, RateLimitError, TimeoutError, ConversationLimitError
 
-MODELS = [
-    {"model":"gpt-4o","modelName":"GPT-4o","modelVariant":None,"modelStyleId":"gpt-4o-mini","createdBy":"OpenAI","moderationLevel":"HIGH","isAvailable":1,"inputCharLimit":16e3,"settingId":"4"},
-    {"model":"gpt-4o-mini","modelName":"GPT-4o","modelVariant":"mini","modelStyleId":"gpt-4o-mini","createdBy":"OpenAI","moderationLevel":"HIGH","isAvailable":0,"inputCharLimit":16e3,"settingId":"3"},
-    {"model":"claude-3-5-sonnet-20240620","modelName":"Claude 3.5","modelVariant":"Sonnet","modelStyleId":"claude-3-haiku","createdBy":"Anthropic","moderationLevel":"HIGH","isAvailable":1,"inputCharLimit":16e3,"settingId":"7"},
-    {"model":"claude-3-opus-20240229","modelName":"Claude 3","modelVariant":"Opus","modelStyleId":"claude-3-haiku","createdBy":"Anthropic","moderationLevel":"HIGH","isAvailable":1,"inputCharLimit":16e3,"settingId":"2"},
-    {"model":"claude-3-haiku-20240307","modelName":"Claude 3","modelVariant":"Haiku","modelStyleId":"claude-3-haiku","createdBy":"Anthropic","moderationLevel":"HIGH","isAvailable":0,"inputCharLimit":16e3,"settingId":"1"},
-    {"model":"meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo","modelName":"Llama 3.1","modelVariant":"70B","modelStyleId":"llama-3","createdBy":"Meta","moderationLevel":"MEDIUM","isAvailable":0,"isOpenSource":0,"inputCharLimit":16e3,"settingId":"5"},
-    {"model":"mistralai/Mixtral-8x7B-Instruct-v0.1","modelName":"Mixtral","modelVariant":"8x7B","modelStyleId":"mixtral","createdBy":"Mistral AI","moderationLevel":"LOW","isAvailable":0,"isOpenSource":0,"inputCharLimit":16e3,"settingId":"6"},
-    {"model":"Qwen/Qwen2.5-Coder-32B-Instruct","modelName":"Qwen 2.5 Coder","modelVariant":"32B","modelStyleId":"qwen","createdBy":"Alibaba Cloud","moderationLevel":"LOW","isAvailable":0,"isOpenSource":1,"inputCharLimit":16e3,"settingId":"90"}
-]
+class DuckDuckGoSearchException(Exception):
+    """Base exception class for duckduckgo_search."""
 
-class Conversation(BaseConversation):
+class Conversation(JsonConversation):
     vqd: str = None
     message_history: Messages = []
+    cookies: dict = {}
 
     def __init__(self, model: str):
         self.model = model
 
 class DDG(AsyncGeneratorProvider, ProviderModelMixin):
+    label = "DuckDuckGo AI Chat"
     url = "https://duckduckgo.com/aichat"
     api_endpoint = "https://duckduckgo.com/duckchat/v1/chat"
+    status_url = "https://duckduckgo.com/duckchat/v1/status"
+    
     working = True
     supports_stream = True
     supports_system_message = True
     supports_message_history = True
-
+    
     default_model = "gpt-4o-mini"
-    models = [model.get("model") for model in MODELS]
+    models = [default_model, "claude-3-haiku-20240307", "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo", "mistralai/Mixtral-8x7B-Instruct-v0.1"]
+
     model_aliases = {
+        "gpt-4": "gpt-4o-mini",
         "claude-3-haiku": "claude-3-haiku-20240307",
         "llama-3.1-70b": "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo",
         "mixtral-8x7b": "mistralai/Mixtral-8x7B-Instruct-v0.1",
-        "gpt-4": "gpt-4o-mini",
     }
 
+    last_request_time = 0
+
+    @classmethod 
+    def validate_model(cls, model: str) -> str:
+        """Validates and returns the correct model name"""
+        if not model:
+            return cls.default_model
+        if model in cls.model_aliases:
+            model = cls.model_aliases[model]
+        if model not in cls.models:
+            raise ModelNotSupportedError(f"Model {model} not supported. Available models: {cls.models}")
+        return model
+
     @classmethod
-    async def get_vqd(cls, proxy: str, connector: BaseConnector = None):
-        status_url = "https://duckduckgo.com/duckchat/v1/status"
+    async def sleep(cls):
+        """Implements rate limiting between requests"""
+        now = time.time()
+        if cls.last_request_time > 0:
+            delay = max(0.0, 0.75 - (now - cls.last_request_time))
+            if delay > 0:
+                await asyncio.sleep(delay)
+        cls.last_request_time = now
+
+    @classmethod
+    async def fetch_vqd(cls, session: ClientSession, max_retries: int = 3) -> str:
+        """Fetches the required VQD token for the chat session with retries."""
         headers = {
-            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
-            'Accept': 'text/event-stream',
-            'x-vqd-accept': '1'
+            "accept": "text/event-stream",
+            "content-type": "application/json", 
+            "x-vqd-accept": "1",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         }
-        async with aiohttp.ClientSession(connector=get_connector(connector, proxy)) as session:
-            async with session.get(status_url, headers=headers) as response:
-                await raise_for_status(response)
-                return response.headers.get("x-vqd-4")
+
+        for attempt in range(max_retries):
+            try:
+                await cls.sleep()
+                async with session.get(cls.status_url, headers=headers) as response:
+                    await raise_for_status(response)
+                    vqd = response.headers.get("x-vqd-4", "")
+                    if vqd:
+                        return vqd
+                    response_text = await response.text()
+                    raise RuntimeError(f"Failed to fetch VQD token: {response.status} {response_text}")
+            except ResponseStatusError as e:
+                if attempt < max_retries - 1:
+                    wait_time = random.uniform(1, 3) * (attempt + 1)
+                    await asyncio.sleep(wait_time)
+                else:
+                    raise RuntimeError(f"Failed to fetch VQD token after {max_retries} attempts: {str(e)}")
+
+        raise RuntimeError("Failed to fetch VQD token: Maximum retries exceeded")
 
     @classmethod
     async def create_async_generator(
         cls,
         model: str,
         messages: Messages,
+        proxy: str = None,
+        timeout: int = 30,
+        cookies: Cookies = None,
         conversation: Conversation = None,
         return_conversation: bool = False,
-        proxy: str = None,
-        connector: BaseConnector = None,
         **kwargs
     ) -> AsyncResult:
-        model = cls.get_model(model)
+        model = cls.validate_model(model)
 
-        is_new_conversation = False
-        if conversation is None:
-            conversation = Conversation(model)
-            is_new_conversation = True
-        
-        debug.last_model = model
-        
-        if conversation.vqd is None:
-            conversation.vqd = await cls.get_vqd(proxy, connector)
-        if not conversation.vqd:
-            raise Exception("Failed to obtain VQD token")
+        if cookies is None and conversation is not None:
+            cookies = conversation.cookies
 
-        headers = {
-            'accept': 'text/event-stream',
-            'content-type': 'application/json',
-            'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
-            'x-vqd-4': conversation.vqd,
-        }
-        
-        async with ClientSession(headers=headers, connector=get_connector(connector, proxy)) as session:
-            if is_new_conversation:
-                conversation.message_history = [{"role": "user", "content": format_prompt(messages)}]
-            else:
-                if len(messages) >= 2:
-                    conversation.message_history = [
-                        *conversation.message_history,
-                        messages[-2],
-                        messages[-1]
-                    ]
-                elif len(messages) == 1:
-                    conversation.message_history = [
-                        *conversation.message_history,
-                        messages[-1]
-                    ]
+        try:
+            async with ClientSession(timeout=ClientTimeout(total=timeout), cookies=cookies) as session:
+                if conversation is None:
+                    conversation = Conversation(model)
+                    conversation.vqd = await cls.fetch_vqd(session)
+                    conversation.message_history = [{"role": "user", "content": format_prompt(messages)}]
+                else:
+                    conversation.message_history.append(messages[-1])
 
-            if return_conversation:
-                yield conversation
+                headers = {
+                    "accept": "text/event-stream",
+                    "content-type": "application/json",
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                    "x-vqd-4": conversation.vqd,
+                }
 
-            data = {
-                "model": conversation.model,
-                "messages": conversation.message_history
-            }
+                data = {
+                    "model": model,
+                    "messages": conversation.message_history,
+                }
 
-            async with session.post(cls.api_endpoint, json=data) as response:
-                conversation.vqd = response.headers.get("x-vqd-4")
-                await raise_for_status(response)
-                
-                async for line in response.content:
-                    if line:
-                        decoded_line = line.decode('utf-8')
-                        if decoded_line.startswith('data: '):
-                            json_str = decoded_line[6:]
-                            if json_str == '[DONE]':
-                                break
+                await cls.sleep()
+                async with session.post(cls.api_endpoint, json=data, headers=headers, proxy=proxy) as response:
+                    await raise_for_status(response)
+                    reason = None
+                    full_message = ""
+
+                    async for line in response.content:
+                        line = line.decode("utf-8").strip()
+
+                        if line.startswith("data:"):
                             try:
-                                json_data = json.loads(json_str)
-                                if 'message' in json_data:
-                                    yield json_data['message']
+                                message = json.loads(line[5:].strip())
                             except json.JSONDecodeError:
-                                pass
+                                continue
+
+                            if "action" in message and message["action"] == "error":
+                                error_type = message.get("type", "")
+                                if message.get("status") == 429:
+                                    if error_type == "ERR_CONVERSATION_LIMIT":
+                                        raise ConversationLimitError(error_type)
+                                    raise RateLimitError(error_type)
+                                raise DuckDuckGoSearchException(error_type)
+
+                            if "message" in message:
+                                if message["message"]:
+                                    yield message["message"]
+                                    full_message += message["message"]
+                                    reason = "length"
+                                else:
+                                    reason = "stop"
+
+                    if return_conversation:
+                        conversation.message_history.append({"role": "assistant", "content": full_message})
+                        conversation.vqd = response.headers.get("x-vqd-4", conversation.vqd)
+                        conversation.cookies = {
+                            n: c.value 
+                            for n, c in session.cookie_jar.filter_cookies(cls.url).items()
+                        }
+                        yield conversation
+
+                    if reason is not None:
+                        yield FinishReason(reason)
+
+        except asyncio.TimeoutError as e:
+            raise TimeoutError(f"Request timed out: {str(e)}")

@@ -10,7 +10,7 @@ from aiohttp import ClientSession, BaseConnector
 
 from ...typing import AsyncResult, Messages, Cookies
 from ...requests import raise_for_status, DEFAULT_HEADERS
-from ...image import ImageResponse, ImagePreview
+from ...providers.response import ImageResponse, ImagePreview
 from ...errors import ResponseError
 from ..base_provider import AsyncGeneratorProvider, ProviderModelMixin
 from ..helper import format_prompt, get_connector, format_cookies
@@ -29,7 +29,7 @@ class MetaAI(AsyncGeneratorProvider, ProviderModelMixin):
     label = "Meta AI"
     url = "https://www.meta.ai"
     working = True
-    default_model = ''
+    default_model = 'meta-ai'
 
     def __init__(self, proxy: str = None, connector: BaseConnector = None):
         self.session = ClientSession(connector=get_connector(connector, proxy), headers=DEFAULT_HEADERS)
